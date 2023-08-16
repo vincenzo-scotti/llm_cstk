@@ -33,6 +33,8 @@ export PYTHONPATH=$PYTHONPATH:/path/to/llm_cstk/src
 
 ## Web API
 
+In the following, we provide examples of how to use the Web API for chatting and searching.
+
 ### Chat
 
 Most of the functionalities are powered using an LLM.
@@ -40,17 +42,39 @@ The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.1
 In most cases, the service hosting the LLM is started transparently.
 
 The chat-related functionalities are:
-- *Information extraction*: given a reference document, the user interacts with an LLM-based chatbot to extract relevant information.
-- *Knowledge-based question answering*: the user discusses with an LLM-based chatbot that can exploit external information from a knowledge base to answer.
-- *Response generation*: The chatbot is used to suggest possible responses in a conversation.
+- **Information extraction**: given a reference document, the user interacts with an LLM-based chatbot to extract relevant information.
+- **Knowledge-based question answering**: the user discusses with an LLM-based chatbot that can exploit external information from a knowledge base to answer.
+- **Response generation**: The chatbot is used to suggest possible responses in a conversation.
 
 #### Information extraction
 
-...
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
 
 #### Knowledge-based question answering
 
-...
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
 
 #### Response generation
 
@@ -58,22 +82,216 @@ The chat-related functionalities are:
 
 ##### Custom (L)LMs
 
-You can use a language model fine-tuned on domain-specific data to suggest candidate responses.
+You can use a language model fine-tuned on domain-specific data to generate candidate responses.
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
 
 ##### LLMs
 
 LLMs can be used to:
-- Elaborate on the responses suggested by the language models fine-tuned on domain-specific data to generate a suggested response
-- Exploit external knowledge (previous chats, as in few-shot learning or reference documents) to generate a suggested response
+- Elaborate on the responses suggested by the language models fine-tuned on domain-specific data to generate a suggested response.
+- Exploit external knowledge (previous chats, as in few-shot learning or reference documents) to generate a suggested response.
 - Use both previous approaches.
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
 
 ### Search
 
-...
+The search-related functionalities are:
+- **Retrieve document (passage)**: find semantically or lexically similar documents (or document passages) to a given query.
+- **Generating a snippet**: given the query results, highlight the passages more relevant to the query.
+- **Adding new corpora**: add a new document collection to the search in.
+
+#### Retrieve document (passage)
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Document
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Document passage
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Document (long query)
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Document passage (long query)
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+#### Generate snippet
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Results
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Results (long query)
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+#### Add new corpus
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Insert in collection
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Indexing
+
+```python
+>>> import requests
+>>> url = '...'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
 
 ## Fine-tuning
 
-We offer the possibility to fine-tune a language models on domain-specific data for chatting or searching.
+We offer the possibility to fine-tune language models on domain-specific data for chatting or searching.
 
 ### Chat
 
