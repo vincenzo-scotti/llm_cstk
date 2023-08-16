@@ -4,7 +4,7 @@ An *LLM*-powered toolkit for *chatbot* and *search* services.
 
 This toolkit is thought to provide easy-to-deploy APIs integrating chatbot and (semantic) search services using LLM technologies.
 The toolkit mainly provides two APIs, one for chatting and one for searching.
-Additionally, we provide code for training *custom language models* for chatting or *custom ranking models* for searching using *domain-specific data*, which can be easily integrated into the overall pipeline.
+Additionally, we provide code for training *custom (large) language models* for chatting or *custom ranking models* for searching using *domain-specific data*, which can be easily integrated into the overall pipeline.
 
 ## Setup
 
@@ -40,25 +40,27 @@ The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.1
 In most cases, the service hosting the LLM is started transparently.
 
 The chat-related functionalities are:
-- *Document analysis*: 
+- *Information extraction*: given a reference document, the user interacts with an LLM-based chatbot to extract relevant information.
+- *Knowledge-based question answering*: the user discusses with an LLM-based chatbot that can exploit external information from a knowledge base to answer.
+- *Response generation*: The chatbot is used to suggest possible responses in a conversation.
 
-#### Document analysis
-
-...
-
-#### Knowledge-based Q&A
+#### Information extraction
 
 ...
 
-#### Suggest responses
+#### Knowledge-based question answering
 
 ...
 
-##### Using custom models
+#### Response generation
+
+...
+
+##### Custom (L)LMs
 
 You can use a language model fine-tuned on domain-specific data to suggest candidate responses.
 
-##### Using LLMs
+##### LLMs
 
 LLMs can be used to:
 - Elaborate on the responses suggested by the language models fine-tuned on domain-specific data to generate a suggested response
@@ -69,17 +71,17 @@ LLMs can be used to:
 
 ...
 
-## Training
+## Fine-tuning
 
-We offer the possibility to train language models on domain-specific data for chatting or searching.
+We offer the possibility to fine-tune a language models on domain-specific data for chatting or searching.
 
 ### Chat
 
-#### Fine-tuning LM
+#### LM
 
 ...
 
-#### Fine-tuning LLM
+#### LLM
 
 ...
 
