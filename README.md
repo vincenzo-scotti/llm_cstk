@@ -1,22 +1,50 @@
 # LLM CSTK
 
-An LLM-powered toolkit for chatbot and search services.
+An *LLM*-powered toolkit for *chatbot* and *search* services.
 
 This toolkit is thought to provide easy-to-deploy APIs integrating chatbot and (semantic) search services using LLM technologies.
 The toolkit mainly provides two APIs, one for chatting and one for searching.
-Additionally, we provide code for training custom chatbots or sea on domain-specific data, which can be easily integrated into the overall pipeline.
+Additionally, we provide code for training *custom language models* for chatting or *custom ranking models* for searching using *domain-specific data*, which can be easily integrated into the overall pipeline.
 
 ## Setup
+
+To install all the required packages within an [Anaconda](https://anaconda.org) environment, run the following commands:
+
+```bash
+# Create an Anaconda environment
+conda create -n llm_cstk python=3.10 cudatoolkit=11.6
+# Activate anaconda environment
+conda activate llm_cstk
+# Install packages
+pip install requirements.txt
+```
+
+[!NOTE]  
+Skip the `cudatoolkit` option if you don't want to use the GPU.
+
+[!WARNING]  
+This toolkit uses the [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python/tree/main) library; to use the GPU, follow the installation instructions on the library repository.
+
+To add the source code directory to the Python path, you can add this line to the file `~/.bashrc`
+
+```bash
+export PYTHONPATH=$PYTHONPATH:/path/to/llm_cstk/src
+```
 
 ## Web API
 
 ### Chat
 
 Most of the functionalities are powered using an LLM.
-The code was initially developed to use the [Llama]() and [Llama 2]() models available through the []() library.
+The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.13971) and [Llama 2](https://arxiv.org/abs/2307.09288) models available through the [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python/tree/main) library.
 In most cases, the service hosting the LLM is started transparently.
 
+The chat-related functionalities are:
+- *Document analysis*: 
+
 #### Document analysis
+
+...
 
 #### Knowledge-based Q&A
 
@@ -24,7 +52,7 @@ In most cases, the service hosting the LLM is started transparently.
 
 #### Suggest responses
 
-
+...
 
 ##### Using custom models
 
