@@ -19,11 +19,11 @@ conda activate llm_cstk
 pip install requirements.txt
 ```
 
-[!NOTE]  
-Skip the `cudatoolkit` option if you don't want to use the GPU.
+> [!NOTE]  
+> Skip the `cudatoolkit` option if you don't want to use the GPU.
 
-[!WARNING]  
-This toolkit uses the [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python/tree/main) library; to use the GPU, follow the installation instructions on the library repository.
+> [!WARNING]  
+> This toolkit uses the [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python/tree/main) library; to use the GPU, follow the installation instructions on the library repository.
 
 To add the source code directory to the Python path, you can add this line to the file `~/.bashrc`
 
