@@ -346,7 +346,7 @@ The scripts expect to have the `./src` directory in the Python path and all data
 #### LM
 
 In the following, we provide the instructions to fine-tune one of the language models available in the [Transformers library](https://huggingface.co/docs/transformers/index) from [Huggingface]().
-Additionally, we provide instructions to monitor the training process.
+Additionally, we provide instructions to monitor the fine-tuning process.
 
 ##### Run
 
@@ -362,6 +362,9 @@ To fine-tune the language model in background, run:
 nohup python ./src/bin/train_dialogue_nn.py --config_file_path ./resources/configs/path/to/training/config.yaml > experiment_"$(date '+%Y_%m_%d_%H_%M_%S')".out &
 ```
 
+> [!NOTE]  
+> The fine-tuning script works with both *causal* (or *decoder-only*) language models and *transducer* (or *encoder-decoder*) language models.
+
 ##### Monitor
 
 It is possible to monitor the fine-tuning process using [Tensorboard](https://www.tensorflow.org/tensorboard).
@@ -369,7 +372,7 @@ It is possible to monitor the fine-tuning process using [Tensorboard](https://ww
 To connect to a remote server and monitor the fine-tuning process, connect via ssh to your machine using a tunnel
 
 ```bash
-ssh  -L 16006:127.0.0.1:6006 user@adderess
+ssh user@adderess -L 16006:127.0.0.1:6006
 ```
 
 Start the Tensorboard server on the remote or local machine
@@ -381,7 +384,7 @@ tensorboard --logdir ./expertiments/path/to/tensorboard/
 Finally, connect to http://127.0.0.1:6006 or http://127.0.0.1:16006 on your local machine, depending, respectively, whether the language model is fine-tuned on the local machine or a remote machine.
 
 > [!NOTE]  
-> Skip the ssh tunnel passage if you are locally connected to the machine you are using for fine-tuning.
+> Skip the ssh tunnel passage if you are locally connected to the machine you use for fine-tuning.
 
 #### LLM
 
