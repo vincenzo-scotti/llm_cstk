@@ -48,7 +48,7 @@ pip install requirements.txt
 > Skip the `cudatoolkit` option if you don't want to use the GPU.
 
 > [!WARNING]  
-> This toolkit uses the [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python/tree/main) library; to use the GPU, follow the installation instructions on the library repository.
+> This toolkit uses the [`llama-cpp-python` library](https://github.com/abetlen/llama-cpp-python/tree/main); to use the GPU, follow the installation instructions on the library repository.
 
 To add the source code directory to the Python path, you can add this line to the file `~/.bashrc`
 
@@ -59,6 +59,8 @@ export PYTHONPATH=$PYTHONPATH:/path/to/llm_cstk/src
 ## Web API
 
 In the following, we provide examples of how to use the Web API for chatting and searching.
+
+In the examples, we use the [`requests` library](https://requests.readthedocs.io) for Python, which is part of the requirements.
 
 ### Chat
 
@@ -151,6 +153,9 @@ The search-related functionalities are:
 
 #### Retrieve document (passage)
 
+The most straightforward use of the search API is to retrieve a document or a document passage from a collection.
+We provide a generic function encapsulating all retrieval functionalities and some specific functions to simplify the use of the retrieval system.
+
 ```python
 >>> import requests
 >>> url = '...'
@@ -165,6 +170,12 @@ The search-related functionalities are:
 ```
 
 ##### Document
+
+To search a document in a given collection using a simple query, use the `search_doc` function.
+This is useful for building a search engine.
+
+> [!NOTE]  
+> Search can be divided among document passages to obtain more precise results.
 
 ```python
 >>> import requests
@@ -181,6 +192,9 @@ The search-related functionalities are:
 
 ##### Document passage
 
+To search a document passage in a given collection using a simple query, use the `search_doc_chunk` function.
+This is useful for the knowledge-based question-answering chat function, which usually requires only a portion of a document to answer.
+
 ```python
 >>> import requests
 >>> url = '...'
@@ -195,6 +209,12 @@ The search-related functionalities are:
 ```
 
 ##### Document (long query)
+
+To search a document in a given collection using a long query, use the `search_doc_long_query` function.
+This is useful for searching documents similar to a reference one.
+
+> [!NOTE]  
+> The query can be divided manually in multiple chunks to obtain more precise results.
 
 ```python
 >>> import requests
