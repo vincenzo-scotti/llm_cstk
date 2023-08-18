@@ -458,7 +458,8 @@ To start the retrieval service in background, run:
 nohup python ./src/script/retrieval_server.py --config_file_path ./resources/configs/path/to/retrieval/config.yaml > retrieval_server_"$(date '+%Y_%m_%d_%H_%M_%S')".out &
 ```
 
-## Acknoledgements
+## Acknowledgements
+
 
 - Vincenzo Scotti: ([vincenzo.scotti@polimi.it](mailto:vincenzo.scotti@polimi.it))
 - Mark James Carman: ([mark.carman@polimi.it](mailto:mark.carman@.polimi.it))
