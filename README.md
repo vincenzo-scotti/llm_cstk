@@ -58,14 +58,14 @@ export PYTHONPATH=$PYTHONPATH:/path/to/llm_cstk/src
 
 ## Web API
 
-In the following, we provide examples of how to use the Web API for chatting and searching.
+In the following, we provide examples of how to use the Web APIs for chatting and searching.
 
 In the examples, we use the [`requests` library](https://requests.readthedocs.io) for Python, which is part of the requirements.
 
 ### Chat
 
 Most of the functionalities are powered using an LLM.
-The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.13971) and [Llama 2](https://arxiv.org/abs/2307.09288) models available through the [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python/tree/main) library.
+The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.13971) and [Llama 2](https://arxiv.org/abs/2307.09288) models available through the [`llama-cpp-python` library](https://github.com/abetlen/llama-cpp-python/tree/main).
 In most cases, the service hosting the LLM is started transparently.
 
 The chat-related functionalities are:
@@ -348,12 +348,12 @@ This is useful for providing a preview when searching for documents similar to a
 
 ## Fine-tuning
 
-We offer the possibility to fine-tune language models on domain-specific data for chatting or searching.
+In the following,  we provide instructions on fine-tuning language models on domain-specific data for chatting or searching.
 
 ### Chat
 
 There are scripts to fine-tune language models or large language models on domain-specific data.
-The scripts expect to have the `./src` directory in the Python path and all data sets to be downloaded and placed in the `./resources/data/raw/` directory.
+The scripts expect the `./src` directory in the Python path and all data sets to be placed in the `./resources/data/raw/` directory.
 
 #### LM
 
@@ -365,13 +365,13 @@ Additionally, we provide instructions to monitor the fine-tuning process.
 To fine-tune a language model on domain-specific data, run:
 
 ```bash
-python ./src/bin/train_dialogue_nn.py --config_file_path ./resources/configs/path/to/training/config.yaml
+python ./src/script/fine_tune_lm.py --config_file_path ./resources/configs/path/to/training/config.yaml
 ```
 
 To fine-tune the language model in background, run:
 
 ```bash
-nohup python ./src/bin/train_dialogue_nn.py --config_file_path ./resources/configs/path/to/training/config.yaml > experiment_"$(date '+%Y_%m_%d_%H_%M_%S')".out &
+nohup python ./src/script/fine_tune_lm.py --config_file_path ./resources/configs/path/to/training/config.yaml > experiment_"$(date '+%Y_%m_%d_%H_%M_%S')".out &
 ```
 
 > [!NOTE]  
@@ -408,13 +408,53 @@ For now, we suggest you train custom search models for ranking using the utiliti
 
 ## Deployiment
 
+In the following, we provide instructions on how to deploy the Web APIs for chatting and searching.
+
+All servers require configurations provided via YAML files, for further details refer to the examples in the `./resources/configs/` directory.
+
 ### Containers 
 
+... [Docker](https://www.docker.com) container ...
+
+#### Chat
+
 ...
 
-### Running instance
+#### Search
 
 ...
+
+### Running manually
+
+The scripts expect the `./src` directory in the Python path.
+
+#### Chat
+
+To start the chat service in foreground, run:
+
+```bash
+python ./src/script/generator_server.py --config_file_path ./resources/configs/path/to/generator/config.yaml
+```
+
+To start the chat service in background, run:
+
+```bash
+nohup python ./src/script/generator_server.py --config_file_path ./resources/configs/path/to/generator/config.yaml > generator_server_"$(date '+%Y_%m_%d_%H_%M_%S')".out &
+```
+
+#### Search
+
+To start the retrieval (search) service in foreground, run:
+
+```bash
+python ./src/script/retrieval_server.py --config_file_path ./resources/configs/path/to/retrieval/config.yaml
+```
+
+To start the retrieval service in background, run:
+
+```bash
+nohup python ./src/script/retrieval_server.py --config_file_path ./resources/configs/path/to/retrieval/config.yaml > retrieval_server_"$(date '+%Y_%m_%d_%H_%M_%S')".out &
+```
 
 ## Acknoledgements
 
