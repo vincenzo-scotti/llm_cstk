@@ -348,12 +348,14 @@ This is useful for providing a preview when searching for documents similar to a
 
 ## Fine-tuning
 
-In the following,  we provide instructions on fine-tuning language models on domain-specific data for chatting or searching.
+In the following, we provide instructions on fine-tuning language models on domain-specific data for chatting or searching.
+
+All fine-tuning scripts require configurations provided via YAML files; for further details, refer to the examples in the `./resources/configs/` directory.
 
 ### Chat
 
 There are scripts to fine-tune language models or large language models on domain-specific data.
-The scripts expect the `./src` directory in the Python path and all data sets to be placed in the `./resources/data/raw/` directory.
+The scripts expect the `./src` directory in the Python path.
 
 #### LM
 
@@ -410,7 +412,7 @@ For now, we suggest you train custom search models for ranking using the utiliti
 
 In the following, we provide instructions on how to deploy the Web APIs for chatting and searching.
 
-All servers require configurations provided via YAML files, for further details refer to the examples in the `./resources/configs/` directory.
+All servers require configurations provided via YAML files; for further details, refer to the examples in the `./resources/configs/` directory.
 
 ### Containers 
 
