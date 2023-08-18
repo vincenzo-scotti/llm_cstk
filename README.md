@@ -231,6 +231,9 @@ This is useful for searching documents similar to a reference one.
 
 ##### Document passage (long query)
 
+To search a document passage in a given collection using a long query, use the `search_doc_long_query` function.
+This is useful for searching documents similar to a reference one and using the response suggestions chat function, which usually requires only a portion of a document to see examples of responses.
+
 ```python
 >>> import requests
 >>> url = '...'
@@ -245,6 +248,9 @@ This is useful for searching documents similar to a reference one.
 ```
 
 #### Generate snippet
+
+Snippets are query-biased summaries of documents that usually provide a preview of the relevant content in a document for a specific query. 
+We provide a generic function encapsulating all snippet generation functionalities and some specific functions to simplify the use of the snippet generation system.
 
 ```python
 >>> import requests
@@ -261,6 +267,9 @@ This is useful for searching documents similar to a reference one.
 
 ##### Results
 
+To generate a snippet given the search results obtained from a simple query, use the `generate_snippet` function.
+This is useful for providing a preview in a search engine.
+
 ```python
 >>> import requests
 >>> url = '...'
@@ -275,6 +284,9 @@ This is useful for searching documents similar to a reference one.
 ```
 
 ##### Results (long query)
+
+To generate a snippet given the search results obtained from a long query, use the `generate_snippet_long_query` function.
+This is useful for providing a preview when searching for documents similar to a reference one.
 
 ```python
 >>> import requests
