@@ -6,6 +6,31 @@ This toolkit is thought to provide easy-to-deploy APIs integrating chatbot and (
 The toolkit mainly provides two APIs, one for chatting and one for searching.
 Additionally, we provide code for training *custom (large) language models* for chatting or *custom ranking models* for searching using *domain-specific data*, which can be easily integrated into the overall pipeline.
 
+## Repository structure
+
+This repository is organised into the following directories:
+
+```
+|- experiments/
+  |- ...
+|- notebooks/
+  |- ...
+|- resources/
+  |- configs/
+    |- ...
+  |- data/
+    |- ...
+  |- models/
+    |- ...
+|- src/
+  |- script/
+    |- ...
+  |- llm_cstk/
+    |- ...
+```
+
+For further details, refer to the `README.md` within each directory.
+
 ## Setup
 
 To install all the required packages within an [Anaconda](https://anaconda.org) environment, run the following commands:
@@ -295,9 +320,48 @@ We offer the possibility to fine-tune language models on domain-specific data fo
 
 ### Chat
 
+There are scripts to fine-tune language models or large language models on domain-specific data.
+The scripts expect to have the `./src` directory in the Python path and all data sets to be downloaded and placed in the `./resources/data/raw/` directory.
+
 #### LM
 
-...
+In the following, we provide the instructions to fine-tune one of the language models available in the [Transformers library](https://huggingface.co/docs/transformers/index) from [Huggingface]().
+Additionally, we provide instructions to monitor the training process.
+
+##### Run
+
+To fine-tune a language model on domain-specific data, run:
+
+```bash
+python ./src/bin/train_dialogue_nn.py --config_file_path ./resources/configs/path/to/training/config.yaml
+```
+
+To fine-tune the language model in background, run:
+
+```bash
+nohup python ./src/bin/train_dialogue_nn.py --config_file_path ./resources/configs/path/to/training/config.yaml > experiment_"$(date '+%Y_%m_%d_%H_%M_%S')".out &
+```
+
+##### Monitor
+
+It is possible to monitor the fine-tuning process using [Tensorboard](https://www.tensorflow.org/tensorboard).
+
+To connect to a remote server and monitor the fine-tuning process, connect via ssh to your machine using a tunnel
+
+```bash
+ssh  -L 16006:127.0.0.1:6006 user@adderess
+```
+
+Start the Tensorboard server on the remote or local machine
+
+```bash
+tensorboard --logdir ./expertiments/path/to/tensorboard/
+```
+
+Finally, connect to http://127.0.0.1:6006 or http://127.0.0.1:16006 on your local machine, depending, respectively, whether the language model is fine-tuned on the local machine or a remote machine.
+
+> [!NOTE]  
+> Skip the ssh tunnel passage if you are locally connected to the machine you are using for fine-tuning.
 
 #### LLM
 
