@@ -22,6 +22,8 @@ This repository is organised into the following directories:
     |- ...
   |- models/
     |- ...
+|- docker/
+  |- ...
 |- src/
   |- script/
     |- ...
@@ -355,7 +357,7 @@ All fine-tuning scripts require configurations provided via YAML files; for furt
 ### Chat
 
 There are scripts to fine-tune language models or large language models on domain-specific data.
-The scripts expect the `./src` directory in the Python path.
+The scripts expect the `./src/` directory in the Python path.
 
 #### LM
 
@@ -428,7 +430,7 @@ All servers require configurations provided via YAML files; for further details,
 
 ### Running manually
 
-The scripts expect the `./src` directory in the Python path.
+The scripts expect the `./src/` directory in the Python path.
 
 #### Chat
 
