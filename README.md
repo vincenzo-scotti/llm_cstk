@@ -159,7 +159,7 @@ LLMs can be used to:
 ...     'relevant_documents': [  # `type: Optional[List[str]]`, a list with possibly useful document (passages), each document is a string, to help respond (optional)
 ...       {'The definitive guide to rebooting a system suggests to (...)'},
 ...       {'Python application common startup errors include (...)'},
-...       {'Restarting your computer for dumbass: (...)'}
+...       {'Restarting your computer for dummies: (...)'}
 ...     ]
 ...   }
 ... }
