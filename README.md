@@ -72,32 +72,18 @@ The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.1
 In most cases, the service hosting the LLM is started transparently.
 
 The chat-related functionalities are:
+- **Response generation**: The chatbot is used to suggest possible responses in a conversation.
 - **Information extraction**: given a reference document, the user interacts with an LLM-based chatbot to extract relevant information.
 - **Knowledge-based question answering**: the user discusses with an LLM-based chatbot that can exploit external information from a knowledge base to answer.
-- **Response generation**: The chatbot is used to suggest possible responses in a conversation.
 
 In the examples, we assume that the service is listening to port `8999`.
 
-#### Information extraction
+The most straightforward use of the chat API is to generate a response using either a LLM or a custom LM.
+We provide a generic function encapsulating all chat functionalities and some specific functions to simplify the use of the chat system.
 
 ```python
 >>> import requests
->>> url = '...'
->>> req_data = {
-...   ...
-... }
->>> output = requests.post(url, data=req_data).json
->>> print(output)
-{
-  ...
-}
-```
-
-#### Knowledge-based question answering
-
-```python
->>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8999/generate'
 >>> req_data = {
 ...   ...
 ... }
@@ -118,7 +104,7 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8999/generate/candidate_responses/custom_lm'
 >>> req_data = {
 ...   ...
 ... }
@@ -138,7 +124,37 @@ LLMs can be used to:
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8999/generate/candidate_responses/lm'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+#### Information extraction
+
+```python
+>>> import requests
+>>> url = 'http://127.0.0.1:8999/generate/info_extraction'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+#### Knowledge-based question answering
+
+```python
+>>> import requests
+>>> url = 'http://127.0.0.1:8999/generate/kb_qa'
 >>> req_data = {
 ...   ...
 ... }
