@@ -63,6 +63,7 @@ export PYTHONPATH=$PYTHONPATH:/path/to/llm_cstk/src
 In the following, we provide examples of how to use the Web APIs for chatting and searching.
 
 In the examples, we use the [`requests` library](https://requests.readthedocs.io) for Python, which is part of the requirements.
+We also assume that the services are available at the following URL: `http://127.0.0.1`.
 
 ### Chat
 
@@ -74,6 +75,8 @@ The chat-related functionalities are:
 - **Information extraction**: given a reference document, the user interacts with an LLM-based chatbot to extract relevant information.
 - **Knowledge-based question answering**: the user discusses with an LLM-based chatbot that can exploit external information from a knowledge base to answer.
 - **Response generation**: The chatbot is used to suggest possible responses in a conversation.
+
+In the examples, we assume that the service is listening to port `8999`.
 
 #### Information extraction
 
@@ -151,7 +154,9 @@ LLMs can be used to:
 The search-related functionalities are:
 - **Retrieve document (passage)**: find semantically or lexically similar documents (or document passages) to a given query.
 - **Generating a snippet**: given the query results, highlight the passages more relevant to the query.
-- **Adding new corpora**: add a new document collection to the search in.
+- **Adding new corpora**: add a new document collection to search over.
+
+In the examples, we assume that the service is listening to port `8666`.
 
 #### Retrieve document (passage)
 
@@ -160,7 +165,7 @@ We provide a generic function encapsulating all retrieval functionalities and so
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/search'
 >>> req_data = {
 ...   ...
 ... }
@@ -181,7 +186,7 @@ This is useful for building a search engine.
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/search/doc'
 >>> req_data = {
 ...   ...
 ... }
@@ -199,7 +204,7 @@ This is useful for the knowledge-based question-answering chat function, which u
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/search/doc_chunk'
 >>> req_data = {
 ...   ...
 ... }
@@ -220,7 +225,7 @@ This is useful for searching documents similar to a reference one.
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/search/doc_long_query'
 >>> req_data = {
 ...   ...
 ... }
@@ -238,7 +243,7 @@ This is useful for searching documents similar to a reference one and using the 
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/search/doc_chunk_long_query'
 >>> req_data = {
 ...   ...
 ... }
@@ -256,7 +261,7 @@ We provide a generic function encapsulating all snippet generation functionaliti
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/snippet'
 >>> req_data = {
 ...   ...
 ... }
@@ -274,7 +279,7 @@ This is useful for providing a preview in a search engine.
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/snippet/generate'
 >>> req_data = {
 ...   ...
 ... }
@@ -292,7 +297,7 @@ This is useful for providing a preview when searching for documents similar to a
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/snippet/generate_long_query'
 >>> req_data = {
 ...   ...
 ... }
@@ -307,7 +312,7 @@ This is useful for providing a preview when searching for documents similar to a
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/corpus'
 >>> req_data = {
 ...   ...
 ... }
@@ -322,7 +327,22 @@ This is useful for providing a preview when searching for documents similar to a
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/corpus/add'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Insert in collection (large corpus)
+
+```python
+>>> import requests
+>>> url = 'http://127.0.0.1:8666/corpus/add_large'
 >>> req_data = {
 ...   ...
 ... }
@@ -337,7 +357,22 @@ This is useful for providing a preview when searching for documents similar to a
 
 ```python
 >>> import requests
->>> url = '...'
+>>> url = 'http://127.0.0.1:8666/corpus/index'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+##### Indexing (large corpus)
+
+```python
+>>> import requests
+>>> url = 'http://127.0.0.1:8666/corpus/index_large'
 >>> req_data = {
 ...   ...
 ... }
