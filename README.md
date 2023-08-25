@@ -152,14 +152,14 @@ LLMs can be used to:
 ...       {'speaker': 'User', 'text': 'I am trying to start a Python application, but every time it says there are missing packages and crashes.'}
 ...     ]
 ...     'candidate_reponses': [  # `type: Optional[List[Dict[str, str]]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text, to help respond (optional)
-...         {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
-...         {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
-...         {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
+...       {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
+...       {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
+...       {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
 ...     ]
 ...     'relevant_documents': [  # `type: Optional[List[str]]`, a list with possibly useful document (passages), each document is a string, to help respond (optional)
-...         {'The definitive guide to rebooting a system suggests to (...)'},
-...         {'Python application common startup errors include (...)'},
-...         {'Restarting your computer for dumbass: (...)'}
+...       {'The definitive guide to rebooting a system suggests to (...)'},
+...       {'Python application common startup errors include (...)'},
+...       {'Restarting your computer for dumbass: (...)'}
 ...     ]
 ...   }
 ... }
@@ -206,9 +206,9 @@ LLMs can be used to:
 ...                      'The assistant provides the user with technical support about computer programming. '
 ...                      'When available, the assistant may use additional information from suggested responses and possibly relevant documents, elaborating the additional information if useful.',  
 ...     'relevant_documents': [  # `type: List[str]`, a list with possibly useful document (passages), each document is a string, to help respond
-...         '',
-...         '',
-...         ''
+...       '',
+...       '',
+...       ''
 ...     ]
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
 ...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
