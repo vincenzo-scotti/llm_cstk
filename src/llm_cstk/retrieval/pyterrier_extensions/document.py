@@ -4,8 +4,7 @@ import re
 from shutil import rmtree
 
 import pandas as pd
-
-from typing import Pattern, Tuple, Optional
+import pyterrier as pt
 
 from .wrapper import BiEncoderPTTransformer
 from .utils import *

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union, Literal, Type, TypeAlias, Tuple, List, Dict, Set, Callable, Pattern
 
 
 class _Singleton:

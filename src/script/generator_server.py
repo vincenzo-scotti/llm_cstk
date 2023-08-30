@@ -5,7 +5,7 @@ import logging
 from typing import Dict, Optional
 
 from submodules.llm_cstk.src.llm_cstk.generator import AIAssistant
-from submodules.llm_cstk.src.llm_cstk.utils import init_rest_server_environment
+from llm_cstk.utils.scripting import init_rest_server_environment
 
 import json
 from flask import Flask, request, jsonify

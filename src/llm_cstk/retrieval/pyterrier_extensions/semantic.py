@@ -1,8 +1,7 @@
 import os
 
 import pandas as pd
-
-from typing import Optional
+import pyterrier as pt
 
 from .document import PTDocManager
 from .ranker import _PTRanker

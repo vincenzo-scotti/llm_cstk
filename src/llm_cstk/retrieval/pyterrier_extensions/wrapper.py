@@ -5,13 +5,11 @@ from functools import partial
 import pickle
 import bz2
 
-import pandas as pd
-
 from sentence_transformers import util
 
+import pandas as pd
+import pyterrier as pt
 from pyterrier.model import coerce_queries_dataframe
-
-from typing import Callable, Tuple, Optional
 
 from .utils import *
 

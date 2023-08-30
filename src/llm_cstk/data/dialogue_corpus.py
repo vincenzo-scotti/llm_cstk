@@ -1,16 +1,11 @@
 import bz2
 import pickle
-import os
-import numpy as np
-import torch
 import copy
 import yaml
 
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizer, AutoTokenizer, AutoConfig
 from transformers import BatchEncoding
-
-from typing import Union, Dict, Optional
 
 from .corpora import ChatData
 from .preparation import prepare_sample, sample_to_string, _check_fit_in_token_window

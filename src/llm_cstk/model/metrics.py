@@ -5,7 +5,7 @@ from parlai.core.metrics import BleuMetric, F1Metric, IntraDistinctMetric, Inter
 
 from collections import Counter
 
-from typing import Optional, List, Literal
+from .utils import *
 
 # NOTE there are pre-implemented versions of these metrics in torchmetrics
 

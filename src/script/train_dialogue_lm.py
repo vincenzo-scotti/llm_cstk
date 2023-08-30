@@ -10,9 +10,9 @@ import pytorch_lightning as pl
 
 from torch.utils.data import DataLoader
 
-from submodules.llm_cstk.src.llm_cstk.model import DialogueLM
-from submodules.llm_cstk.src.llm_cstk.data import ChatDataset
-from submodules.llm_cstk.src.llm_cstk.utils import init_training_environment
+from llm_cstk.model import DialogueLM
+from llm_cstk.data import ChatDataset
+from llm_cstk.utils.scripting import init_training_environment
 
 
 CALLBACKS: Dict = {

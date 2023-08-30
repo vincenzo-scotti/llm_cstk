@@ -1,6 +1,6 @@
 import os
 
-from typing import Optional
+import pyterrier as pt
 
 from .document import PTDocManager
 from .utils import *

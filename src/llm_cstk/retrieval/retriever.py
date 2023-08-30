@@ -6,11 +6,10 @@ import pyterrier as pt
 from functools import partial
 from nltk import word_tokenize
 
-from typing import Callable, Optional, Tuple
-
 from .pyterrier_extensions import *
 from .pyterrier_extensions.utils import *
 from .pyterrier_extensions.utils import _Singleton
+
 
 if not pt.started():
     pt.init()

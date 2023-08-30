@@ -13,4 +13,4 @@ WORKDIR /llm_cstk
 
 RUN python3 -m pip install -r requirements.txt
 
-CMD ["python3" "./src/script/retrieval_server.py" "--config_file_path" "./resources/configs/path/to/retrieval/config.yaml"]
+# CMD ["python3" "./src/script/retrieval_server.py" "--config_file_path" "./resources/configs/path/to/retrieval/config.yaml"]

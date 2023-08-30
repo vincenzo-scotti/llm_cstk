@@ -8,11 +8,9 @@ from transformers import AutoConfig, PretrainedConfig
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, PreTrainedModel
 from transformers import AutoTokenizer, PreTrainedTokenizer, BatchEncoding
 
-from submodules.llm_cstk.src.llm_cstk.data.utils import *
-from submodules.llm_cstk.src.llm_cstk.data.preparation import sample_to_string
-
 from .metrics import *
 from .optim import AdaFactor
+from .utils import *
 
 
 class DialogueLM(pl.LightningModule):

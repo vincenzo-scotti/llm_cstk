@@ -1,4 +1,4 @@
-from typing import Optional
+import pyterrier as pt
 
 from .semantic import SemanticPTRanker
 from .lexical import LexicalPTRanker

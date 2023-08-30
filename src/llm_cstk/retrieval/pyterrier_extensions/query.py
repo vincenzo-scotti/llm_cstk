@@ -1,7 +1,5 @@
 import pandas as pd
 
-from typing import Callable
-
 from .utils import *
 
 
