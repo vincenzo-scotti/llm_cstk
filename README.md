@@ -109,8 +109,6 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 ...   'params': {
 ...     'n_samples': 3,  # `type: int`, the number of samples to generate
 ...     'speaker': 'AI',  # `type: str`, the identifier of the response's speaker
-...     'custom_prompt': 'The following is a conversation between an AI assistant and a human user. '  # `type: Optional[str]`, the instructions for the language model (optional)
-...                      'The assistant provides the user with technical support about computer programming.',  
 ...     'info': 'Python application crashing at startup',  # `type: Optional[str]`, a short description of the ongoing dialogue (optional)
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
 ...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
@@ -121,7 +119,7 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 >>> output = requests.post(url, data=req_data).json
 >>> print(output)
 {
-  'candidate_reponses': [  # `type: List[Dict[str, str]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text
+  'candidates': [  # `type: List[Dict[str, str]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text
     {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
     {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
     {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
@@ -141,17 +139,13 @@ LLMs can be used to:
 >>> url = 'http://127.0.0.1:8999/generate/candidate_responses/llm'
 >>> req_data = {
 ...   'params': {
-...     'n_samples': 3,  # `type: int`, the number of samples to generate
 ...     'speaker': 'AI',  # `type: str`, the identifier of the response's speaker
-...     'custom_prompt': 'The following is a conversation between an AI assistant and a human user. '  # `type: Optional[str]`, the instructions for the language model (optional)
-...                      'The assistant provides the user with technical support about computer programming. '
-...                      'When available, the assistant may use additional information from suggested responses and possibly relevant documents, elaborating the additional information if useful.',  
 ...     'info': 'Python application crashing at startup',  # `type: Optional[str]`, a short description of the ongoing dialogue (optional)
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
 ...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
 ...       {'speaker': 'User', 'text': 'I am trying to start a Python application, but every time it says there are missing packages and crashes.'}
 ...     ]
-...     'candidate_reponses': [  # `type: Optional[List[Dict[str, str]]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text, to help respond (optional)
+...     'candidates': [  # `type: Optional[List[Dict[str, str]]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text, to help respond (optional)
 ...       {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
 ...       {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
 ...       {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
@@ -177,8 +171,6 @@ LLMs can be used to:
 >>> url = 'http://127.0.0.1:8999/generate/info_extraction'
 >>> req_data = {
 ...   'params': {
-...     'custom_prompt': 'The following is a conversation between an AI assistant and a human user. '  # `type: Optional[str]`, the instructions for the language model (optional)
-...                      'The assistant helps the user analyse a document and extract useful information from it',  
 ...     'document': 'GPU installation guide ...',  # `type: str`, the text of the document to analyse
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
 ...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
@@ -200,11 +192,6 @@ LLMs can be used to:
 >>> url = 'http://127.0.0.1:8999/generate/kb_qa'
 >>> req_data = {
 ...   'params': {
-...     'n_samples': 3,  # `type: int`, the number of samples to generate
-...     'speaker': 'AI',  # `type: str`, the identifier of the response's speaker
-...     'custom_prompt': 'The following is a conversation between an AI assistant and a human user. '  # `type: Optional[str]`, the instructions for the language model (optional)
-...                      'The assistant provides the user with technical support about computer programming. '
-...                      'When available, the assistant may use additional information from suggested responses and possibly relevant documents, elaborating the additional information if useful.',  
 ...     'relevant_documents': [  # `type: List[str]`, a list with possibly useful document (passages), each document is a string, to help respond
 ...       '',
 ...       '',
