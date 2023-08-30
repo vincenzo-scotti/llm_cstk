@@ -57,7 +57,7 @@ class PTDocManager(_Singleton):
         docs.to_csv(docs_file_path, index=False)
         if docs_chunked is not None:
             docs_file_path = self.get_corpus_path(self.data_dir_path, corpus, chunk_doc=True)
-            docs.to_csv(docs_file_path, index=False)
+            docs_chunked.to_csv(docs_file_path, index=False)
         if chunking_configs is not None:
             tmp_docs = reset_text_col(docs)
             if not isinstance(chunking_configs, list):

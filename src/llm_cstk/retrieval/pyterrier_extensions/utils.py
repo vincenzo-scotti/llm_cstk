@@ -63,7 +63,7 @@ INDEX: str = 'index'
 
 # Files
 
-DATA_FILE_NAME: str = '../../../../../../resources/data'
+DATA_FILE_NAME: str = 'data'
 TERRIER_INDEX_PROPERTIES_FILE: str = 'data.properties'
 EMBEDDINGS_FILE_NAME: str = 'embeddings'
 

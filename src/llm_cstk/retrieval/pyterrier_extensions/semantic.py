@@ -143,7 +143,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
                 chunk_doc,
                 chunk_size,
                 chunk_stride,
-                metadata=metadata
+                metadata=metadata or reranking
             ) % (self.ranking_cutoff if not reranking else self.reranking_cutoff)
         else:
             return self._get_model(
@@ -152,7 +152,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
                 chunk_doc,
                 chunk_size,
                 chunk_stride,
-                metadata=metadata
+                metadata=metadata or reranking
             )
 
     def get_reranking_model(

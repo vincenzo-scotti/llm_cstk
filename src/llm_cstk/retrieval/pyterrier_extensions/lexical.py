@@ -40,10 +40,10 @@ class LexicalPTRanker(_PTRanker, _Singleton):
     ) -> pt.Transformer:
         if cutoff:
             return self._get_model(
-                self.ranking_model, corpus, metadata=metadata
+                self.ranking_model, corpus, metadata=metadata or reranking
             ) % (self.ranking_cutoff if not reranking else self.reranking_cutoff)
         else:
-            return self._get_model(self.ranking_model, corpus)
+            return self._get_model(self.ranking_model, corpus, metadata=metadata or reranking)
 
     def get_reranking_model(self, corpus: str, metadata: bool = False) -> pt.Transformer:
         return self._get_model(self.reranking_model, corpus, metadata=metadata)

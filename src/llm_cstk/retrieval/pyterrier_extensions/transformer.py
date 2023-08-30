@@ -55,31 +55,62 @@ class PTTransformerFactory(_Singleton):
     def raw_doc_loader(
             self,
             corpus: str,
-            chunk_doc: bool,
             size: Optional[int],
-            stride: Optional[int]
+            stride: Optional[int],
+            scoring: Scoring
     ) -> Optional[pt.Transformer]:
-        if chunk_doc and self._lexical_ranker.index_exists(corpus, chunk_doc, size, stride):
-            return pt.text.get_text(
-                pt.IndexRef.of(pt.DFIndexer(self._lexical_ranker.get_index_path(corpus)).path)
-            )
+        if scoring == 'semantic':
+            if self._semantic_ranker.index_exists(corpus, True, size, stride):
+                return None
+            else:
+                return pt.text.get_text(
+                    pt.IndexRef.of(pt.DFIndexer(self._lexical_ranker.get_index_path(corpus)).path)
+                )
+        elif scoring == 'lexical':
+            if self._lexical_ranker.index_exists(corpus, True, size, stride):
+                return None
+            else:
+                return pt.text.get_text(
+                    pt.IndexRef.of(pt.DFIndexer(self._lexical_ranker.get_index_path(corpus)).path)
+                )
         else:
-            return None
+            raise ValueError(
+                f"Unknown scoring method for (re)ranking: \'{scoring}\', "
+                f"accepted values are {', '.join(f'{repr(t)}' for t in Scoring)}"
+            )
 
     def doc_chunks_generator(
             self,
             corpus: str,
             size: Optional[int],
             stride: Optional[int],
-            snippet: bool = False
+            scoring: Scoring,
+            snippet: bool = False,
     ) -> Optional[pt.Transformer]:
-        if size is None and stride is None:
-            return None
-        elif self._lexical_ranker.index_exists(corpus, True, size, stride):
-            return None
+        if scoring == 'semantic':
+            if self._semantic_ranker.index_exists(corpus, True, size, stride):
+                return None
+            else:
+                return pt.apply.generic(reset_text_col) >> pt.text.sliding(
+                    text_attr=BODY if snippet else TEXT,
+                    length=size,
+                    stride=stride,
+                    title_attr=None if snippet else TITLE
+                )
+        elif scoring == 'lexical':
+            if self._lexical_ranker.index_exists(corpus, True, size, stride):
+                return None
+            else:
+                return pt.apply.generic(reset_text_col) >> pt.text.sliding(
+                    text_attr=BODY if snippet else TEXT,
+                    length=size,
+                    stride=stride,
+                    title_attr=None if snippet else TITLE
+                )
         else:
-            return pt.apply.generic(reset_text_col) >> pt.text.sliding(
-                text_attr=BODY if snippet else TEXT, length=size, stride=stride, title_attr=None if snippet else TITLE
+            raise ValueError(
+                f"Unknown scoring method for (re)ranking: \'{scoring}\', "
+                f"accepted values are {', '.join(f'{repr(t)}' for t in Scoring)}"
             )
 
     def doc_ranker(

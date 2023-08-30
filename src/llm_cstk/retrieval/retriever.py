@@ -69,11 +69,11 @@ class DocRetriever(_Singleton):
         ) if reranking is not None else None
         # Doc loading (optional)
         raw_doc_loader: Optional[pt.Transformer] = self._transformer_factory.raw_doc_loader(
-            corpus, chunk_doc, doc_chunk_size, doc_chunk_stride
-        )
+            corpus, doc_chunk_size, doc_chunk_stride, ranking
+        ) if chunk_doc else None
         # Doc chunking (optional)
         doc_chunks_generator: Optional[pt.Transformer] = self._transformer_factory.doc_chunks_generator(
-            corpus, doc_chunk_size, doc_chunk_stride
+            corpus, doc_chunk_size, doc_chunk_stride, ranking
         ) if chunk_doc else None
         # Scoring
         doc_ranker: pt.Transformer = self._transformer_factory.doc_ranker(
@@ -131,11 +131,11 @@ class DocRetriever(_Singleton):
         ) if reranking is not None else self._transformer_factory.query_cleaner(ranking)
         # Doc loading (optional)
         raw_doc_loader: Optional[pt.Transformer] = self._transformer_factory.raw_doc_loader(
-            corpus, True, doc_chunk_size, doc_chunk_stride
+            corpus, doc_chunk_size, doc_chunk_stride, reranking if reranking is not None else ranking
         ) if BODY not in search_results.columns else None
         # Doc chunking
         doc_chunks_generator: pt.Transformer = self._transformer_factory.doc_chunks_generator(
-            corpus, doc_chunk_size, doc_chunk_stride, snippet=True
+            corpus, doc_chunk_size, doc_chunk_stride, reranking if reranking is not None else ranking, snippet=True
         )
         # Scorer
         doc_scorer: pt.Transformer = self._transformer_factory.doc_scorer(ranking, corpus, ranking=reranking is None)
