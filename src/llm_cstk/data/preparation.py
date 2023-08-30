@@ -8,9 +8,9 @@ def sample_to_string(
         sample: Dict, chunk: bool, tokeniser: PreTrainedTokenizer, encoder_decoder: bool
 ) -> Union[str, Tuple[str, str]]:
     #
-    prompt: Optional[str] = None
-    if PROMPT in sample:
-        prompt = sample[PROMPT]
+    instructions: Optional[str] = None
+    if INSTRUCTIONS in sample:
+        instructions = sample[INSTRUCTIONS]
     #
     info: Optional[str] = None
     if INFO in sample and sample[INFO] is not None and sample[INFO] != UNK:
@@ -29,8 +29,8 @@ def sample_to_string(
         #
         if info is not None:
             src_str = f"{INFO_ID}{SEP}{info}{BLOCK_SEP}{src_str}"
-        if prompt is not None:
-            src_str = f'{prompt}{BLOCK_SEP}{src_str}'
+        if instructions is not None:
+            src_str = f'{instructions}{BLOCK_SEP}{src_str}'
         #
         tgt_str = response
         #
@@ -43,8 +43,8 @@ def sample_to_string(
         #
         if info is not None:
             sample_str = f'{SYSTEM_ID}{SPEAKER_SEP}{info}{tokeniser.eos_token}{sample_str}'
-        if prompt is not None:
-            sample_str = f'{SYSTEM_ID}{SPEAKER_SEP}{prompt}{tokeniser.eos_token}{sample_str}'
+        if instructions is not None:
+            sample_str = f'{SYSTEM_ID}{SPEAKER_SEP}{instructions}{tokeniser.eos_token}{sample_str}'
 
     return sample_str
 

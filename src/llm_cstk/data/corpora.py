@@ -35,7 +35,7 @@ class ChatData(_ChatData):
     def _preprocess_utterance(self, utt: pd.Series, *args, **kwargs) -> Dict[str, Union[str, bool]]:
         utterance: Dict[str, Union[str, bool]] = {
             SPEAKER: utt[SPEAKER],
-            SYSTEM: utt[SYSTEM],
+            SYS: utt[SYS],
             TEXT: self._preprocess_text(utt[TEXT]),
         }
 
@@ -48,7 +48,7 @@ class ChatData(_ChatData):
 
     def _preprocess_dialogue(
             self, df: pd.DataFrame, *args, **kwargs
-        ) -> Dict[str, Union[str, Dict[str, Union[str, bool]]]]:
+    ) -> Dict[str, Union[str, Dict[str, Union[str, bool]]]]:
         # Prepare data
         df = df.sort_values(UTTERANCE_IDX)
         metadata: pd.Series = df.iloc[0].drop(self.UTTERANCE_COLS)

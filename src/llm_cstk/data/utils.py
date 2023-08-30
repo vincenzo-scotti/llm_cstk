@@ -39,13 +39,13 @@ DIALOGUE_ID: str = 'dialogue_id'
 INFO: str = 'info'
 UTTERANCES: str = 'utterances'
 
-PROMPT: str = 'prompt'
-PROMPT_ALTERNATIVES: str = 'prompt_alternatives'
+INSTRUCTIONS: str = 'instructions'
+INSTRUCTIONS_ALTERNATIVES: str = 'instructions_alternatives'
 
 UTTERANCE_IDX: str = 'utterance_idx'
 
 SPEAKER: str = 'speaker'
-SYSTEM: str = 'sys'
+SYS: str = 'sys'
 TEXT: str = 'text'
 
 CONTEXT: str = 'context'
@@ -197,7 +197,7 @@ class _ChatData:
                 INFO: dialogue[INFO],
                 UTTERANCE_IDX: idx,
                 SPEAKER: utterance[SPEAKER],
-                SYSTEM: utterance[SYSTEM],
+                SYS: utterance[SYS],
                 TEXT: utterance[TEXT]
             } | {
                 key: dialogue[key] if key in dialogue else utterance[key]

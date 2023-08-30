@@ -19,13 +19,13 @@ def _change_ids(sample: Dict, encoder_decoder: bool = True) -> Dict:
     usr_ids: List[str] = list(set(
         utterance[SPEAKER]
         for utterance in (sample[CONTEXT] + [sample[RESPONSE]] if encoder_decoder else sample[UTTERANCES])
-        if utterance[SPEAKER] is not None and not utterance[SYSTEM]
+        if utterance[SPEAKER] is not None and not utterance[SYS]
     ))
     random.shuffle(usr_ids)
     sys_ids: List[str] = list(set(
         utterance[SPEAKER]
         for utterance in (sample[CONTEXT] + [sample[RESPONSE]] if encoder_decoder else sample[UTTERANCES])
-        if utterance[SPEAKER] is not None and utterance[SYSTEM]
+        if utterance[SPEAKER] is not None and utterance[SYS]
     ))
     random.shuffle(sys_ids)
     # Get alternative IDS
@@ -78,17 +78,17 @@ def _drop_preamble(sample: Dict, encoder_decoder: bool = True) -> Dict:
     return sample
 
 
-def _change_prompt(sample, encoder_decoder: bool = True):
-    if PROMPT_ALTERNATIVES in sample and all(isinstance(alt, list) for alt in sample[PROMPT_ALTERNATIVES]):
-        prompt = ''
-        for alt in sample[PROMPT_ALTERNATIVES]:
-            prompt = (prompt + random.choice(alt)).strip()
-        sample[PROMPT] = prompt if len(prompt) > 0 else None
+def _change_instructions(sample, encoder_decoder: bool = True):
+    if INSTRUCTIONS_ALTERNATIVES in sample and all(isinstance(alt, list) for alt in sample[INSTRUCTIONS_ALTERNATIVES]):
+        instructions = ''
+        for alt in sample[INSTRUCTIONS_ALTERNATIVES]:
+            instructions = (instructions + random.choice(alt)).strip()
+        sample[INSTRUCTIONS] = instructions if len(instructions) > 0 else None
 
     return sample
 
 
-METADATA_TRANSFORMATIONS: List[Callable] = [_change_prompt]
+METADATA_TRANSFORMATIONS: List[Callable] = [_change_instructions]
 TRANSFORMATIONS: List[Callable] = [_change_ids, _change_casing, _drop_preamble]
 TRANSFORMATION_FLAGS: List[bool] = [True] * len(TRANSFORMATIONS) + [False] * (len(TRANSFORMATIONS) - 1)
 
