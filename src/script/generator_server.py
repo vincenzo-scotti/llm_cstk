@@ -37,8 +37,8 @@ def generate_candidate_responses():
 @flask_app.post("/generate/candidate_responses/llm")
 def generate_candidate_responses():
     params = json.loads(request.data)['params']
-    candidates = ai_assistant.generate_candidate_responses_llm(**params).to_json()
-    response = jsonify(candidates)
+    candidate = ai_assistant.generate_candidate_responses_llm(**params).to_json()
+    response = jsonify(candidate)
 
     return response
 
@@ -68,7 +68,7 @@ def main(args: Namespace):
     logging.info("Generator API script started and configuration file loaded")
     global ai_assistant, flask_app
     # Initialise document retriever
-    ai_assistant = AIAssistant.load(configs['ai'])
+    ai_assistant = AIAssistant.load(configs['generator'])
     # Run FLASK application
     flask_app.run(**configs['flask'])
     # Close script
