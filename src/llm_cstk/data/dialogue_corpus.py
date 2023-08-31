@@ -58,7 +58,8 @@ class ChatDataset(Dataset):
             corpora_dir_path: str,
             corpus_list: List[str],
             corpus_prefix: str = 'chat_data',
-            stride: Optional[int] = None
+            stride: Optional[int] = None,
+            tokenisation: Optional[Dict] = None
     ):
         super(ChatDataset, self).__init__()
         # Instance parameters
@@ -68,7 +69,8 @@ class ChatDataset(Dataset):
         # Loader parameters
         self.split: Split = split
         self.transformer: str = transformer
-        self.tokeniser: PreTrainedTokenizer = AutoTokenizer.from_pretrained(transformer)
+        tokenisation = tokenisation if tokenisation is not None else dict()
+        self._tokeniser: PreTrainedTokenizer = AutoTokenizer.from_pretrained(transformer, **tokenisation)
         self.encoder_decoder = AutoConfig.from_pretrained(self.transformer).is_encoder_decoder
         self.corpus_cache_file_path: Optional[str] = None
         if cache_dir_path is not None:
@@ -117,17 +119,17 @@ class ChatDataset(Dataset):
 
     def _chunk_dialogue(self, sample: Dict) -> List[Dict]:
         # Check whether dialogue fits in token window
-        sample_str = sample_to_string(sample, False, self.tokeniser, self.encoder_decoder)
-        if _check_fit_in_token_window(sample_str, self.tokeniser, self.encoder_decoder):
+        sample_str = sample_to_string(sample, False, self._tokeniser, self.encoder_decoder)
+        if _check_fit_in_token_window(sample_str, self._tokeniser, self.encoder_decoder):
             return [sample]
         else:
             # Find minimum dialogue fitting in window:
             tmp_sample = copy.deepcopy(sample)
-            tmp_sample_str = sample_to_string(tmp_sample, False, self.tokeniser, self.encoder_decoder)
-            while not _check_fit_in_token_window(tmp_sample_str, self.tokeniser, self.encoder_decoder):
+            tmp_sample_str = sample_to_string(tmp_sample, False, self._tokeniser, self.encoder_decoder)
+            while not _check_fit_in_token_window(tmp_sample_str, self._tokeniser, self.encoder_decoder):
                 if len(tmp_sample[UTTERANCES]) > 0:
                     tmp_sample[UTTERANCES].pop()
-                tmp_sample_str = sample_to_string(tmp_sample, False, self.tokeniser, self.encoder_decoder)
+                tmp_sample_str = sample_to_string(tmp_sample, False, self._tokeniser, self.encoder_decoder)
             # Iteratively build new dialogues sliding forward the end of the sequence
             samples = list()
             for i in range(len(tmp_sample[UTTERANCES]), len(sample[UTTERANCES]) + 1, self.stride):
@@ -178,7 +180,7 @@ class ChatDataset(Dataset):
         # Use utility function to prepare sample
         sample_str: Union[str, Tuple[str, str]] = prepare_sample(
             sample,
-            self.tokeniser,
+            self._tokeniser,
             augmentation=self.split == TRAIN,
             encoder_decoder=self.encoder_decoder
         )
@@ -191,12 +193,12 @@ class ChatDataset(Dataset):
         Union[Tuple[BatchEncoding, torch.tensor], Tuple[BatchEncoding, BatchEncoding, torch.tensor]], List[Dict], Split
     ]:
         tensor_data: Union[Tuple[BatchEncoding, torch.tensor], Tuple[BatchEncoding, BatchEncoding, torch.tensor]]
-        # Depending on the selected model and tokeniser prepare input tensors
+        # Depending on the selected model and _tokeniser prepare input tensors
         if self.encoder_decoder:
             src_strings, tgt_strings = [*zip(*[self._prepare_sample(sample) for sample in samples])]
-            tgt_strings = [self.tokeniser.pad_token + tgt_str for tgt_str in tgt_strings]
-            src_encoding: BatchEncoding = self.tokeniser(src_strings, return_tensors='pt', padding=True)
-            tgt_encoding: BatchEncoding = self.tokeniser(
+            tgt_strings = [self._tokeniser.pad_token + tgt_str for tgt_str in tgt_strings]
+            src_encoding: BatchEncoding = self._tokeniser(src_strings, return_tensors='pt', padding=True)
+            tgt_encoding: BatchEncoding = self._tokeniser(
                 tgt_strings, return_tensors='pt', padding=True, truncation=True
             )
             mask = ~tgt_encoding.attention_mask.bool()
@@ -204,8 +206,8 @@ class ChatDataset(Dataset):
             labels[mask] = IGNORE_IDX
             tensor_data = (src_encoding, tgt_encoding, labels)
         else:
-            input_strings = [self._prepare_sample(sample) + self.tokeniser.eos_token for sample in samples]
-            input_encodings: BatchEncoding = self.tokeniser(
+            input_strings = [self._prepare_sample(sample) + self._tokeniser.eos_token for sample in samples]
+            input_encodings: BatchEncoding = self._tokeniser(
                 input_strings, return_tensors='pt', padding=True, truncation=True
             )
             mask = ~input_encodings.attention_mask.bool()
@@ -225,4 +227,4 @@ class ChatDataset(Dataset):
         if self.encoder_decoder:
             raise NotImplementedError()
         else:
-            return [self._prepare_sample(sample) + self.tokeniser.eos_token for sample in self.data]
+            return [self._prepare_sample(sample) + self._tokeniser.eos_token for sample in self.data]
