@@ -220,3 +220,9 @@ class ChatDataset(Dataset):
         ] = (tensor_data, samples, self.split)
 
         return mini_batch
+
+    def as_strings(self) -> List[str]:
+        if self.encoder_decoder:
+            raise NotImplementedError()
+        else:
+            return [self._prepare_sample(sample) + self.tokeniser.eos_token for sample in self.data]

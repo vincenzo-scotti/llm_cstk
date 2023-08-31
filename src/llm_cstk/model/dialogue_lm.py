@@ -1,4 +1,5 @@
 import copy
+import tempfile
 
 import pytorch_lightning as pl
 
@@ -7,6 +8,11 @@ import torchmetrics
 from transformers import AutoConfig, PretrainedConfig
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, PreTrainedModel
 from transformers import AutoTokenizer, PreTrainedTokenizer, BatchEncoding
+try:
+    from transformers import GPTQConfig
+    quantisation_available: bool = True
+except ImportError:
+    quantisation_available = False
 
 from .metrics import *
 from .optim import AdaFactor
@@ -143,6 +149,39 @@ class DialogueLM(pl.LightningModule):
         model = model.to(model.model_device)
 
         return model
+
+    def quantise(self, bits: int, samples: List[str], path: Optional[str] = None, **kwargs):
+        if not quantisation_available:
+            raise Warning("Quantisation is not available on this device")
+        # Temporarily checkpoint model
+        if path is None:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                self._language_model.save_pretrained()
+                return self.quantise(bits, samples, path=tmp_dir, **kwargs)
+        # Delete transformer language model
+        self._language_model = None
+        # Prepare configs
+        quantisation = GPTQConfig(bits, tokenizer=self._tokeniser, dataset=samples, **kwargs)
+        # Reload model checkpoint quantising
+        cfg: PretrainedConfig = AutoConfig.from_pretrained(self.transformer)
+        if cfg.is_encoder_decoder:
+            self._language_model = AutoModelForSeq2SeqLM.from_pretrained(
+                path, device_map="auto", quantization_config=quantisation
+            )
+            if self.checkpoint_gradient:
+                if hasattr(self._language_model, 'encoder'):
+                    self._language_model.encoder.gradient_checkpointing_enable()
+                if hasattr(self._language_model, 'decoder'):
+                    self._language_model.decoder.gradient_checkpointing_enable()
+        else:
+            self._language_model = AutoModelForCausalLM.from_pretrained(
+                path, device_map="auto", quantization_config=quantisation
+            )
+            if self.checkpoint_gradient:
+                if hasattr(self._language_model, 'transformer'):
+                    self._language_model.transformer.gradient_checkpointing_enable()
+                elif hasattr(self._language_model, 'model'):
+                    self._language_model.model.gradient_checkpointing_enable()
 
     def forward(self, src_encoding: BatchEncoding, tgt_encoding: Optional[BatchEncoding] = None) -> torch.tensor:
         # Run transformer model

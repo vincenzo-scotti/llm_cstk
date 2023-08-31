@@ -1,4 +1,5 @@
 import sys
+import tempfile
 from argparse import ArgumentParser, Namespace
 import logging
 from datetime import datetime
@@ -101,6 +102,21 @@ def main(args: Namespace):
     if 'model_dir_path' in configs:
         model.save(configs['model_dir_path'])
         logging.info(f"Model saved at \'{configs['model_dir_path']}\'")
+        # Apply post-training quantisation
+    if 'quantisation' in configs:
+        start_time = datetime.now()
+        logging.info("Qunatisation started")
+        model.quantise(
+            configs['quantisation'].get('bits', 4),
+            data_splits[configs['quantisation'].get('split', 'train')].as_strings(),
+            path=configs.get('model_dir_path'),
+            **configs['quantisation'].get('params', dict())
+        )
+        stop_time = datetime.now()
+        logging.info(f"Qunatisation completed (elapsed time: {stop_time - start_time})")
+        # Save quantised model
+        model.save(configs['quantisation']['model_dir_path'])
+        logging.info(f"Quantised model saved at \'{configs['quantisation']['model_dir_path']}\'")
 
     return 0
 
