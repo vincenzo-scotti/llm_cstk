@@ -1,4 +1,5 @@
 from .llm import LLMAPI
+from .custom_lm import CustomLMFactory
 from .utils import *
 from .utils import _Singleton
 
@@ -19,8 +20,8 @@ class AIAssistant(_Singleton):
             module, param = param_id.split("__", 1)
             self._submodules_params[module][param] = param_val
         # LLM Chatbot
-        self._llm: LLMAPI = LLMAPI.load(**self._submodules_params['doc_manager'])
-        self._custom_lm_factory = ...
+        self._llm: LLMAPI = LLMAPI.load(**self._submodules_params['llm'])
+        self._custom_lm_factory = CustomLMFactory.load(**self._submodules_params['custom_lm_factory'])
 
     @classmethod
     def load(cls, *args, **kwargs):
@@ -33,18 +34,29 @@ class AIAssistant(_Singleton):
 
     def generate_llm(self, utterances: List[Dict[str, str]]):
         response: str = self._llm.completion(utterances)
-        generate_output: Dict[str, str] = {SPEAKER: AI, TEXT: response}
+        output: Dict[str, str] = {SPEAKER: AI, TEXT: response}
 
-        return generate_output
+        return output
 
-    def generate_custom_lm(self):
-        ...
+    def _get_custom_lm_params(self, task: Task, corpus: str) -> Tuple[CustomLM, Optional[str], Dict]:
+        custom_lm = self._custom_lm_factory.lm(task, corpus)
+        instructions = self._custom_lm_factory.instructions(task, corpus)
+        generate_params = self._custom_lm_factory.generate_params(task, corpus)
+
+        return custom_lm, instructions, generate_params
+
+    def generate_custom_lm(self, sample, task: Task, corpus: str, *args, **kwargs) -> str:
+        custom_lm, instructions, generate_params = self._get_custom_lm_params(task, corpus)
+        sample[INSTRUCTIONS] = instructions
+        output = custom_lm.generate(sample, *args, **kwargs, **generate_params)
+
+        return output
 
     def candidate_responses_llm(
             self,
             utterances: List[Dict[str, str]],
             info: Optional[str] = None,
-            candidates: Optional[List[str]] = None,
+            candidates: Optional[List[Dict[str, str]]] = None,
             relevant_documents: Optional[List[str]] = None
     ):
         if info is not None:
@@ -54,17 +66,21 @@ class AIAssistant(_Singleton):
             utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
         if candidates is not None and len(candidates) > 0:
             template = self._llm.templates.get(CANDIDATE_RESPONSES)[CANDIDATES]
+            candidates = BLOCK_SEP.join(
+                template['format'].format(i, example[TEXT]) for i, example in enumerate(candidates, start=1)
+            )
             utterances.append({
                 SPEAKER: SYSTEM,
-                TEXT: f"{template['prefix']}{BLOCK_SEP}"
-                      f"{BLOCK_SEP.join(template['format'].format(i, example) for i, example in enumerate(candidates, start=1))}"
+                TEXT: f"{template['prefix']}{BLOCK_SEP}{candidates}"
             })
         if relevant_documents is not None and len(relevant_documents) > 0:
             template = self._llm.templates.get(CANDIDATE_RESPONSES)[RELEVANT_DOCS]
+            relevant_documents = BLOCK_SEP.join(
+                template['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1)
+            )
             utterances.append({
                 SPEAKER: SYSTEM,
-                TEXT: f"{template['prefix']}{BLOCK_SEP}"
-                      f"{BLOCK_SEP.join(template['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1))}"
+                TEXT: f"{template['prefix']}{BLOCK_SEP}{relevant_documents}"
             })
 
         return self.generate_llm(utterances)
@@ -73,23 +89,34 @@ class AIAssistant(_Singleton):
             self,
             utterances: List[Dict[str, str]],
             speaker: str,
+            corpus: str,
             info: Optional[str] = None,
             n_samples: int = 1
-    ):
-        custom_lm: DialogueLM = ...
-        return [self.generate_custom_lm() for _ in range(n_samples)]
+    ) -> List[Dict[str, str]]:
+        #
+        utterances.append({SPEAKER: speaker})
+        dialogue: Dict = {INFO: info, UTTERANCES: utterances}
+        #
+        kwargs = {'output_prefix': True}
+
+        return [
+            {SPEAKER: AI, TEXT: self.generate_custom_lm(dialogue, CANDIDATE_RESPONSES, corpus, **kwargs)}
+            for _ in range(n_samples)
+        ]
 
     def candidate_responses(
-            self, model: LM,
+            self,
+            model: LM,
             utterances: List[Dict[str, str]],
             speaker: Optional[str] = None,
+            corpus: Optional[str] = None,
             info: Optional[str] = None,
             **kwargs
-    ) -> List[Dict[str, str]:
+    ) -> List[Dict[str, str]]:
         if model == 'llm':
-            return self.candidate_responses_llm(utterances, info=info, **kwargs)
+            return [self.candidate_responses_llm(utterances, info=info, **kwargs)]
         elif model == 'custom_lm':
-            return self.candidate_responses_custom_lm(utterances, speaker, info=info, **kwargs)
+            return self.candidate_responses_custom_lm(utterances, speaker, corpus, info=info, **kwargs)
         else:
             raise ValueError(
                 f"Unknown model type: `{model}`, accepted values are {', '.join(f'{repr(t)}' for t in Scoring)}"

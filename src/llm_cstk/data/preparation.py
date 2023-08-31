@@ -9,7 +9,7 @@ def sample_to_string(
 ) -> Union[str, Tuple[str, str]]:
     #
     instructions: Optional[str] = None
-    if INSTRUCTIONS in sample:
+    if INSTRUCTIONS in sample and sample[INSTRUCTIONS] is not None:
         instructions = sample[INSTRUCTIONS]
     #
     info: Optional[str] = None

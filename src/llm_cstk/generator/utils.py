@@ -6,6 +6,8 @@ from llm_cstk.utils.common import _Singleton
 # Types
 
 LM: TypeAlias = Literal['llm', 'custom_lm']
+CustomLM: TypeAlias = Union[DialogueLM]
+Task: TypeAlias = Literal['candidates', 'info_extraction', 'kb_qa']
 
 # Constants
 
@@ -34,3 +36,6 @@ KB_QA: str = 'kb_qa'
 CANDIDATES: str = 'candidates'
 RELEVANT_DOCS: str = 'docs'
 RELEVANT_DOC: str = 'docs'
+
+MODEL: str = 'model'
+GENERATE_PARAMS: str = 'generate_params'
