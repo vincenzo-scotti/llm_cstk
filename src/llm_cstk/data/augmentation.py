@@ -19,13 +19,13 @@ def _change_ids(sample: Dict, encoder_decoder: bool = True) -> Dict:
     usr_ids: List[str] = list(set(
         utterance[SPEAKER]
         for utterance in (sample[CONTEXT] + [sample[RESPONSE]] if encoder_decoder else sample[UTTERANCES])
-        if utterance[SPEAKER] is not None and not utterance[SYS]
+        if utterance[SPEAKER] is not None and not utterance[SYSTEM_FLAG]
     ))
     random.shuffle(usr_ids)
     sys_ids: List[str] = list(set(
         utterance[SPEAKER]
         for utterance in (sample[CONTEXT] + [sample[RESPONSE]] if encoder_decoder else sample[UTTERANCES])
-        if utterance[SPEAKER] is not None and utterance[SYS]
+        if utterance[SPEAKER] is not None and utterance[SYSTEM_FLAG]
     ))
     random.shuffle(sys_ids)
     # Get alternative IDS

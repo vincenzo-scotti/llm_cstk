@@ -35,7 +35,7 @@ class ChatData(_ChatData):
     def _preprocess_utterance(self, utt: pd.Series, *args, **kwargs) -> Dict[str, Union[str, bool]]:
         utterance: Dict[str, Union[str, bool]] = {
             SPEAKER: utt[SPEAKER],
-            SYS: utt[SYS],
+            SYSTEM_FLAG: utt[SYSTEM_FLAG],
             TEXT: self._preprocess_text(utt[TEXT]),
         }
 

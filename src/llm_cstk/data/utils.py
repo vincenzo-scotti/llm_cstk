@@ -45,7 +45,7 @@ INSTRUCTIONS_ALTERNATIVES: str = 'instructions_alternatives'
 UTTERANCE_IDX: str = 'utterance_idx'
 
 SPEAKER: str = 'speaker'
-SYS: str = 'sys'
+SYSTEM_FLAG: str = 'sys'
 TEXT: str = 'text'
 
 CONTEXT: str = 'context'
@@ -197,7 +197,7 @@ class _ChatData:
                 INFO: dialogue[INFO],
                 UTTERANCE_IDX: idx,
                 SPEAKER: utterance[SPEAKER],
-                SYS: utterance[SYS],
+                SYSTEM_FLAG: utterance[SYSTEM_FLAG],
                 TEXT: utterance[TEXT]
             } | {
                 key: dialogue[key] if key in dialogue else utterance[key]
