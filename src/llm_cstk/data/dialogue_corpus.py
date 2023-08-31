@@ -181,7 +181,8 @@ class ChatDataset(Dataset):
         sample_str: Union[str, Tuple[str, str]] = prepare_sample(
             sample,
             self._tokeniser,
-            augmentation=self.split == TRAIN,
+            # augmentation=self.split == TRAIN,  # TODO restore this version
+            augmentation=(sample[SPLIT] if SPLIT in sample else self.split) == TRAIN,
             encoder_decoder=self.encoder_decoder
         )
 
@@ -222,6 +223,40 @@ class ChatDataset(Dataset):
         ] = (tensor_data, samples, self.split)
 
         return mini_batch
+
+    def huggingface_collate(self, samples: List[Dict]) -> Dict[str, torch.tensor]:
+        if self.encoder_decoder:
+            src_strings, tgt_strings = [*zip(*[self._prepare_sample(sample) for sample in samples])]
+            tgt_strings = [self._tokeniser.pad_token + tgt_str for tgt_str in tgt_strings]
+            src_encoding: BatchEncoding = self._tokeniser(src_strings, return_tensors='pt', padding=True)
+            tgt_encoding: BatchEncoding = self._tokeniser(
+                tgt_strings, return_tensors='pt', padding=True, truncation=True
+            )
+            mask = ~tgt_encoding.attention_mask.bool()
+            labels: torch.tensor = tgt_encoding.input_ids.clone()
+            labels[mask] = -100
+
+            return {
+                'input_ids': src_encoding.input_ids,
+                'attention_mask': src_encoding.attention_mask,
+                'decoder_input_ids': tgt_encoding.input_ids,
+                'decoder_attention_mask': tgt_encoding.attention_mask,
+                'labels': labels
+            }
+        else:
+            input_strings = [self._prepare_sample(sample) + self._tokeniser.eos_token for sample in samples]
+            input_encodings: BatchEncoding = self._tokeniser(
+                input_strings, return_tensors='pt', padding=True, truncation=True
+            )
+            mask = ~input_encodings.attention_mask.bool()
+            labels: torch.tensor = input_encodings.input_ids.clone()
+            labels[mask] = -100
+
+            return {
+                'input_ids': input_encodings.input_ids,
+                'attention_mask': input_encodings.attention_mask,
+                'labels': labels
+            }
 
     def as_strings(self) -> List[str]:
         if self.encoder_decoder:

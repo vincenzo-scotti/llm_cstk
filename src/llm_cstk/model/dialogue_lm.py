@@ -9,9 +9,10 @@ import torchmetrics
 from transformers import AutoConfig, PretrainedConfig
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, PreTrainedModel
 from transformers import AutoTokenizer, PreTrainedTokenizer, BatchEncoding
+
+quantisation_available: bool = True
 try:
     from transformers import GPTQConfig
-    quantisation_available: bool = True
 except ImportError:
     quantisation_available = False
 
@@ -54,28 +55,23 @@ class DialogueLM(pl.LightningModule):
         self.checkpoint_gradient: bool = checkpoint_gradient
         # Transformer model
         self.transformer: str = transformer
-        self._tokeniser: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
+        self._tokeniser: PreTrainedTokenizer = self._load_tokeniser(
             self.transformer, **self._submodules_params['tokeniser']
         )
-        self._language_model: PreTrainedModel
-        cfg: PretrainedConfig = AutoConfig.from_pretrained(self.transformer)
         if quantisation is not None:
             self._submodules_params['model']['load_in_4bit'] = quantisation is not None and quantisation == 4
             self._submodules_params['model']['load_in_8bit'] = quantisation is not None and quantisation == 8
             self._submodules_params['model']['torch_dtype'] = torch.bfloat16 if device.type == 'cuda' else torch.float32
-        if cfg.is_encoder_decoder:
-            self._language_model = AutoModelForSeq2SeqLM.from_pretrained(
-                self.transformer, **self._submodules_params['model']
-            )
+        self._language_model: PreTrainedModel = self._load_language_model(
+            self.transformer, **self._submodules_params['model']
+        )
+        if self._language_model.config.is_encoder_decoder:
             if self.checkpoint_gradient:
                 if hasattr(self._language_model, 'encoder'):
                     self._language_model.encoder.gradient_checkpointing_enable()
                 if hasattr(self._language_model, 'decoder'):
                     self._language_model.decoder.gradient_checkpointing_enable()
         else:
-            self._language_model = AutoModelForCausalLM.from_pretrained(
-                self.transformer, **self._submodules_params['model']
-            )
             if self.checkpoint_gradient:
                 if hasattr(self._language_model, 'transformer'):
                     self._language_model.transformer.gradient_checkpointing_enable()
@@ -155,6 +151,18 @@ class DialogueLM(pl.LightningModule):
         model = model.to(model.model_device)
 
         return model
+
+    @staticmethod
+    def _load_language_model(transformer, **kwargs) -> PreTrainedModel:
+        cfg: PretrainedConfig = AutoConfig.from_pretrained(transformer)
+        if cfg.is_encoder_decoder:
+            return AutoModelForSeq2SeqLM.from_pretrained(transformer, **kwargs)
+        else:
+            return AutoModelForCausalLM.from_pretrained(transformer, **kwargs)
+
+    @staticmethod
+    def _load_tokeniser(transformer, **kwargs) -> PreTrainedTokenizer:
+        return AutoTokenizer.from_pretrained(transformer, **kwargs)
 
     def quantise(self, bits: int, samples: List[str], path: Optional[str] = None, **kwargs):
         if not quantisation_available:
