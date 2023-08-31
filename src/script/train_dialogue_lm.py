@@ -21,6 +21,11 @@ CALLBACKS: Dict = {
 }
 
 
+# TODO integrate better this step
+def quantised_trainin(model: DialogueLM, data_splits: Dict[str, ChatDataset], configs: Dict):
+    ...
+
+
 def main(args: Namespace):
     # Init environment
     configs: Dict = init_training_environment(args.config_file_path)
@@ -30,10 +35,6 @@ def main(args: Namespace):
     model: DialogueLM = DialogueLM(**configs['dialogue_lm'])
     # Start Logging info
     logging.info("Neural network loaded")
-    # Create initial model checkpoint (if required)
-    if 'model_dir_path' in configs:
-        model.save(configs['model_dir_path'])
-        logging.info(f"Model saved at \'{configs['model_dir_path']}\'")
     # Create data set splits
     data_splits: Dict[str, ChatDataset] = {
         split: ChatDataset(
@@ -42,6 +43,7 @@ def main(args: Namespace):
         )
         for split in configs['data']['splits']
     }
+    logging.info("Data set splits loaded")
     # Create data loaders
     data_loaders: Dict[str, DataLoader] = {
         split: DataLoader(data, collate_fn=data.collate, shuffle=split == 'train', **configs['data']['loader'][split])
@@ -105,15 +107,15 @@ def main(args: Namespace):
         # Apply post-training quantisation
     if 'quantisation' in configs:
         start_time = datetime.now()
-        logging.info("Qunatisation started")
+        logging.info("Quantisation started")
         model.quantise(
-            configs['quantisation'].get('bits', 4),
+            configs['quantisation'].get('bits', 8),
             data_splits[configs['quantisation'].get('split', 'train')].as_strings(),
             path=configs.get('model_dir_path'),
             **configs['quantisation'].get('params', dict())
         )
         stop_time = datetime.now()
-        logging.info(f"Qunatisation completed (elapsed time: {stop_time - start_time})")
+        logging.info(f"Quantisation completed (elapsed time: {stop_time - start_time})")
         # Save quantised model
         model.save(configs['quantisation']['model_dir_path'])
         logging.info(f"Quantised model saved at \'{configs['quantisation']['model_dir_path']}\'")
