@@ -26,6 +26,7 @@ class DialogueLM(pl.LightningModule):
             self,
             transformer: str,
             device: Optional[torch.device] = None,
+            quantisation: Optional[int] = None,
             checkpoint_gradient: bool = False,
             ignore_idx: int = IGNORE_IDX,
             compute_lm_metrics: bool = False,
@@ -57,9 +58,11 @@ class DialogueLM(pl.LightningModule):
         )
         self._language_model: PreTrainedModel
         cfg: PretrainedConfig = AutoConfig.from_pretrained(self.transformer)
+        q4bit: bool = quantisation is not None and quantisation == 4
+        q8bit: bool = quantisation is not None and quantisation == 8
         if cfg.is_encoder_decoder:
             self._language_model = AutoModelForSeq2SeqLM.from_pretrained(
-                self.transformer, **self._submodules_params['model']
+                self.transformer, **self._submodules_params['model'], load_in_4bit=q4bit, load_in_8bit=q8bit
             )
             if self.checkpoint_gradient:
                 if hasattr(self._language_model, 'encoder'):
@@ -68,7 +71,7 @@ class DialogueLM(pl.LightningModule):
                     self._language_model.decoder.gradient_checkpointing_enable()
         else:
             self._language_model = AutoModelForCausalLM.from_pretrained(
-                self.transformer, **self._submodules_params['model']
+                self.transformer, **self._submodules_params['model'], load_in_4bit=q4bit, load_in_8bit=q8bit
             )
             if self.checkpoint_gradient:
                 if hasattr(self._language_model, 'transformer'):
@@ -139,7 +142,7 @@ class DialogueLM(pl.LightningModule):
         self._language_model.save_pretrained(path)
 
     @classmethod
-    def load(cls, path: str, device: Optional[torch.device] = None):
+    def load(cls, path: str, device: Optional[torch.device] = None, quantisation: Optional[int] = None):
         # TODO check if loads from different target and source devices
         # Create model instance loading (pre-)trained transformers
         model = DialogueLM(path, device=device)
