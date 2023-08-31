@@ -2,6 +2,7 @@ import copy
 import tempfile
 
 import pytorch_lightning as pl
+import torch
 
 import torchmetrics
 
@@ -58,11 +59,13 @@ class DialogueLM(pl.LightningModule):
         )
         self._language_model: PreTrainedModel
         cfg: PretrainedConfig = AutoConfig.from_pretrained(self.transformer)
-        q4bit: bool = quantisation is not None and quantisation == 4
-        q8bit: bool = quantisation is not None and quantisation == 8
+        if quantisation is not None:
+            self._submodules_params['model']['load_in_4bit'] = quantisation is not None and quantisation == 4
+            self._submodules_params['model']['load_in_8bit'] = quantisation is not None and quantisation == 8
+            self._submodules_params['model']['torch_dtype'] = torch.bfloat16 if device.type == 'cuda' else torch.float32
         if cfg.is_encoder_decoder:
             self._language_model = AutoModelForSeq2SeqLM.from_pretrained(
-                self.transformer, **self._submodules_params['model'], load_in_4bit=q4bit, load_in_8bit=q8bit
+                self.transformer, **self._submodules_params['model']
             )
             if self.checkpoint_gradient:
                 if hasattr(self._language_model, 'encoder'):
@@ -71,7 +74,7 @@ class DialogueLM(pl.LightningModule):
                     self._language_model.decoder.gradient_checkpointing_enable()
         else:
             self._language_model = AutoModelForCausalLM.from_pretrained(
-                self.transformer, **self._submodules_params['model'], load_in_4bit=q4bit, load_in_8bit=q8bit
+                self.transformer, **self._submodules_params['model']
             )
             if self.checkpoint_gradient:
                 if hasattr(self._language_model, 'transformer'):
