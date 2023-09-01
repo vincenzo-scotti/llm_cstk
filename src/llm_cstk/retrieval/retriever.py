@@ -433,11 +433,10 @@ class DocRetriever(_Singleton):
             corpus: str,
             docs: pd.DataFrame,
             docs_chunked: Optional[pd.DataFrame] = None,
-            chunking_configs: Optional[Union[Tuple[int, int], List[Tuple[int, int]]]] = None,
             overwrite: bool = False
     ):
         self._doc_manager.register_corpus(
-            corpus, docs, docs_chunked=docs_chunked, chunking_configs=chunking_configs, overwrite=overwrite
+            corpus, docs, docs_chunked=docs_chunked, overwrite=overwrite
         )
 
     def add_large_corpus(
@@ -445,7 +444,6 @@ class DocRetriever(_Singleton):
             corpus: str,
             docs: pd.DataFrame,
             docs_chunked: Optional[pd.DataFrame] = None,
-            chunking_configs: Optional[Union[Tuple[int, int], List[Tuple[int, int]]]] = None,
             overwrite: bool = False
     ):
         raise NotImplementedError()
