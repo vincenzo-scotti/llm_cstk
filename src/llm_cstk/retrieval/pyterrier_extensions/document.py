@@ -152,10 +152,7 @@ class PTDocManager(_Singleton):
 
     @classmethod
     def get_index_dir_path(
-            cls,
-            data_dir_path: str,
-            corpus: str,
-            chunk_doc: bool = False
+            cls, data_dir_path: str, corpus: str, chunk_doc: bool = False
     ) -> str:
         index_dir: str = CHUNKED_DATA_FILE_NAME if chunk_doc else DATA_FILE_NAME
         path: str = os.path.join(data_dir_path, corpus, INDEX, index_dir)
@@ -163,9 +160,9 @@ class PTDocManager(_Singleton):
         return path
 
     @classmethod
-    def get_lexical_index_path(cls, data_dir_path: str, corpus: str,) -> str:
+    def get_lexical_index_path(cls, data_dir_path: str, corpus: str, chunk_doc: bool = False) -> str:
         return os.path.join(
-            cls.get_index_dir_path(data_dir_path, corpus), TERRIER_INDEX_PROPERTIES_FILE
+            cls.get_index_dir_path(data_dir_path, corpus, chunk_doc=chunk_doc), TERRIER_INDEX_PROPERTIES_FILE
         )
 
     @classmethod
