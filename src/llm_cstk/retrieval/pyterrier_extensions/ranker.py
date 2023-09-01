@@ -34,31 +34,16 @@ class _PTRanker:
     def get_corpus_path(
             self,
             corpus: str,
-            chunk_doc: bool = False,
-            chunk_size: Optional[int] = None,
-            chunk_stride: Optional[int] = None
+            chunk_doc: bool = False
     ) -> str:
-        return PTDocManager.get_corpus_path(
-            self.data_dir_path, corpus, chunk_doc=chunk_doc, chunk_size=chunk_size, chunk_stride=chunk_stride
-        )
+        return PTDocManager.get_corpus_path(self.data_dir_path, corpus, chunk_doc=chunk_doc)
 
     def get_index_dir_path(
             self,
             corpus: str,
-            chunk_doc: bool = False,
-            chunk_size: Optional[int] = None,
-            chunk_stride: Optional[int] = None
+            chunk_doc: bool = False
     ) -> str:
-        #
-        index_dir: str = DATA_FILE_NAME
-        if chunk_doc:
-            index_dir = f'{index_dir}_{CHUNK_AFFIX}'
-        if chunk_size is not None and chunk_stride is not None:
-            index_dir = f'{index_dir}_{WIN_SIZE_AFFIX}_{chunk_size}_{STRIDE_SIZE_AFFIX}_{chunk_stride}'
-        #
-        path: str = os.path.join(self.data_dir_path, corpus, INDEX, index_dir)
-
-        return path
+        return PTDocManager.get_lexical_index_path(self.data_dir_path, corpus, chunk_doc=chunk_doc)
 
     def get_index_path(self, *args, **kwargs) -> str:
         raise NotImplementedError()
