@@ -131,20 +131,8 @@ class PTDocManager(_Singleton):
                 pt_transformer_bienc.save_ann_index()
                 pt_transformer_bienc.save_pre_computed_embeddings()
 
-
     def index_large_corpus(self, *args, **kwargs):
         raise NotImplementedError()
-
-    def _parse_chunking_configs(self, line: str) -> Tuple[bool, Optional[int], Optional[int]]:
-        if self.PLAIN_DATA_ID_REX.match(line):
-            return False, None, None
-        elif self.CHUNKED_DATA_ID_REX.match(line):
-            return True, None, None
-        elif self.CUSTOM_CHUNKED_DATA_ID_REX.match(line):
-            win_size, stride_size = self.CUSTOM_CHUNKED_DATA_ID_REX.findall(line)
-            return True, win_size, stride_size
-        else:
-            raise ValueError
 
     @classmethod
     def get_corpus_data_dir_path(cls, data_dir_path: str, corpus: str) -> str:
@@ -155,9 +143,7 @@ class PTDocManager(_Singleton):
             cls,
             data_dir_path: str,
             corpus: str,
-            chunk_doc: bool = False,
-            chunk_size: Optional[int] = None,
-            chunk_stride: Optional[int] = None
+            chunk_doc: bool = False
     ) -> str:
         file_name = f'{CHUNKED_DATA_FILE_NAME if chunk_doc else DATA_FILE_NAME }.{RAW_DATA_EXT}'
         path: str = os.path.join(cls.get_corpus_data_dir_path(data_dir_path, corpus), file_name)
