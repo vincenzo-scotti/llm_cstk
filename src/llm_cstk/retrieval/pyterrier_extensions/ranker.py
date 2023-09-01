@@ -28,21 +28,13 @@ class _PTRanker:
     def get_scoring_model(self, *args, **kwargs) -> pt.Transformer:
         raise NotImplementedError()
 
-    def get_corpus_dir_path(self, corpus: str):
-        return PTDocManager.get_corpus_path(self.data_dir_path, corpus)
-
-    def get_corpus_path(
-            self,
-            corpus: str,
-            chunk_doc: bool = False
-    ) -> str:
+    def get_corpus_dir_path(self, corpus: str, chunk_doc: bool = False):
         return PTDocManager.get_corpus_path(self.data_dir_path, corpus, chunk_doc=chunk_doc)
 
-    def get_index_dir_path(
-            self,
-            corpus: str,
-            chunk_doc: bool = False
-    ) -> str:
+    def get_corpus_path(self, corpus: str, chunk_doc: bool = False) -> str:
+        return PTDocManager.get_corpus_path(self.data_dir_path, corpus, chunk_doc=chunk_doc)
+
+    def get_index_dir_path(self, corpus: str, chunk_doc: bool = False) -> str:
         return PTDocManager.get_lexical_index_path(self.data_dir_path, corpus, chunk_doc=chunk_doc)
 
     def get_index_path(self, *args, **kwargs) -> str:
