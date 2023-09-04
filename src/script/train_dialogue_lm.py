@@ -83,13 +83,13 @@ def main(args: Namespace):
     logging.info("Callbacks instantiated")
     # Create loggers
     loggers = [
-        pl.loggers.TensorBoardLogger(configs['current_experiments_dir_path']),
-        pl.loggers.CSVLogger(configs['current_experiments_dir_path'])
+        pl.loggers.TensorBoardLogger(configs['current_experiment_dir_path']),
+        pl.loggers.CSVLogger(configs['current_experiment_dir_path'])
     ]
     logging.info("Loggers instantiated")
     # Instantiate Trainer object with the callbacks
     trainer = pl.Trainer(
-        default_root_dir=configs['current_experiments_dir_path'],
+        default_root_dir=configs['current_experiment_dir_path'],
         **configs.get('trainer', dict()),
         callbacks=list(callbacks.values()),
         logger=loggers
