@@ -54,9 +54,9 @@ def _preprocess_quantised_training_configs(configs: Dict) -> Dict:
     configs['quantised_trainer']['merge']['torch_dtype'] = merging_torch_dtype
     # Dialogue LM
     configs['dialogue_lm'].update(
-        quantization_config=configs['quantised_trainer']['bnb'],
-        use_cache=False,
-        device_map='auto'
+        model__quantization_config=configs['quantised_trainer']['bnb'],
+        model__use_cache=False,
+        model__device_map='auto'
     )
     """
     configs['huggingface'] = dict()

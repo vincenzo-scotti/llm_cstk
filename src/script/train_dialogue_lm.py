@@ -17,6 +17,7 @@ from llm_cstk.utils.scripting import init_training_environment
 quantised_training_available: bool = True
 try:
     from transformers import BitsAndBytesConfig, TrainingArguments
+    from datasets import Dataset
     from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
     from peft import AutoPeftModelForCausalLM, AutoPeftModelForSeq2SeqLM
     from trl import SFTTrainer
@@ -54,8 +55,8 @@ def main(args: Namespace):
     if quantised_training:
         # Complete model preparation
         model._language_model.config.pretraining_tp = 1
-        model._language_model = prepare_model_for_kbit_training(model)
-        model._language_model = get_peft_model(model, configs['lora'])
+        model._language_model = prepare_model_for_kbit_training(model._language_model)
+        model._language_model = get_peft_model(model._language_model, configs['quantised_trainer']['lora'])
     # Start Logging info
     logging.info("Neural network loaded")
     # Create data set splits
@@ -72,14 +73,14 @@ def main(args: Namespace):
         split: DataLoader(data, collate_fn=data.collate, shuffle=split == 'train', **configs['data']['loader'][split])
         for split, data in data_splits.items()
     }
-    model.set_n_training_steps(len(data_loaders['train']) / configs['trainer'].get('accumulate_grad_batches', 1))
+    if 'trainer' in configs:  # TODO remove if and leave statement
+        model.set_n_training_steps(len(data_loaders['train']) / configs['trainer'].get('accumulate_grad_batches', 1))
     logging.info("Data loaders instantiated")
     # Create callbacks
     callbacks = {
         callback_id: CALLBACKS[callback_id](**callback_configs)
         for callback_id, callback_configs in configs.get('callbacks', dict()).items()
     } | {'learning_rate_callback': pl.callbacks.LearningRateMonitor()}
-    q_callbacks = {}
     logging.info("Callbacks instantiated")
     # Create loggers
     loggers = [
@@ -96,14 +97,14 @@ def main(args: Namespace):
     )
     q_trainer = SFTTrainer(
         model=model._language_model,
-        train_dataset=data_splits['train'],
-        eval_dataset=data_splits['validation'],
+        train_dataset=Dataset.from_dict({'text': data_splits['train'].as_strings()}),
+        eval_dataset=Dataset.from_dict({'text': data_splits['validation'].as_strings()}),
         peft_config=configs['quantised_trainer']['lora'],
         max_seq_length=model._tokeniser.model_max_length,
         tokenizer=model._tokeniser,
-        packing=True,
         args=configs['quantised_trainer']['training_args'],
-        data_collator=data_splits['train'].huggingface_collate
+        # data_collator=data_splits['train'].huggingface_collate
+        formatting_func=lambda x: x['text']
     ) if quantised_training else None
     logging.info("Trainer instantiated")
     # Train neural network
