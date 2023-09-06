@@ -11,4 +11,5 @@ safetensors>=0.3.1
 protobuf==3.20.0
 parlai==1.7.2
 pandas==1.5.3
+dask==2023.9.0
 python-terrier==0.9.2
