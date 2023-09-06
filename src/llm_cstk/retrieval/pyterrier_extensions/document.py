@@ -14,6 +14,10 @@ from .utils import _Singleton
 __all__ = ['PTDocManager', 'reset_text_col']
 
 
+if not pt.started():
+    pt.init()
+
+
 def reset_text_col(df: pd.DataFrame) -> pd.DataFrame:
     tmp_df = df.copy()
     tmp_df[TEXT] = tmp_df[BODY]
@@ -93,7 +97,7 @@ class PTDocManager(_Singleton):
                 raise ValueError(f"Index already exists at specified path: `{index_dir_path}`")
             data_df = pd.read_csv(
                 os.path.join(corpus_data_dir_path, file_name),
-                dtype=DTYPES if CHUNK_AFFIX in file_name else DTYPES  #TODO fix this with proper dtypes (add olddocno)
+                dtype=DTYPES if CHUNK_AFFIX in file_name else DTYPES  # TODO fix this with proper dtypes (add olddocno)
             )
             # Lexical index
             pt_indexer: pt.Indexer = pt.DFIndexer(index_dir_path)
@@ -119,7 +123,7 @@ class PTDocManager(_Singleton):
                     corpus,
                     transformer_configs[TRANSFORMER_PARAM],
                     transformer_configs.get(NORM_PARAM, True),
-                    *self._parse_chunking_configs(name)
+                    CHUNK_AFFIX in name
                 )
                 pt_transformer_bienc = BiEncoderPTTransformer(
                     data_df=data_df,
