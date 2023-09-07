@@ -1,6 +1,5 @@
 import os.path
 
-import re
 from shutil import rmtree
 
 import pandas as pd
