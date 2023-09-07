@@ -64,6 +64,7 @@ INDEX: str = 'index'
 # Files
 
 DATA_FILE_NAME: str = 'data'
+CHUNKED_DATA_FILE_NAME: str = 'data_chunked'
 TERRIER_INDEX_PROPERTIES_FILE: str = 'data.properties'
 EMBEDDINGS_FILE_NAME: str = 'embeddings'
 
