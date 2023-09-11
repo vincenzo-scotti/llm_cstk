@@ -59,8 +59,8 @@ class DialogueLM(pl.LightningModule):
             self.transformer, **self._submodules_params['tokeniser']
         )
         if quantisation is not None:
-            self._submodules_params['model']['load_in_4bit'] = quantisation is not None and quantisation == 4
-            self._submodules_params['model']['load_in_8bit'] = quantisation is not None and quantisation == 8
+            self._submodules_params['model']['load_in_4bit'] = quantisation == 4
+            self._submodules_params['model']['load_in_8bit'] = quantisation == 8
             self._submodules_params['model']['torch_dtype'] = torch.bfloat16 if device.type == 'cuda' else torch.float32
         self._language_model: PreTrainedModel = self._load_language_model(
             self.transformer, **self._submodules_params['model']
@@ -144,7 +144,7 @@ class DialogueLM(pl.LightningModule):
     def load(cls, path: str, device: Optional[torch.device] = None, quantisation: Optional[int] = None):
         # TODO check if loads from different target and source devices
         # Create model instance loading (pre-)trained transformers
-        model = DialogueLM(path, device=device)
+        model = DialogueLM(path, device=device, quantisation=quantisation)
         # Set in evaluation mode
         model.eval()
         # Move model to device
@@ -322,8 +322,8 @@ class DialogueLM(pl.LightningModule):
                 max_new_tokens=kwargs.get('max_new_tokens', 0 if self._language_model.config.is_encoder_decoder else 1)
             )
             target_output_str = None
-        if not self._language_model.config.is_encoder_decoder:
-            input_str = [s + self._tokeniser.eos_token for s in input_str]
+        # if not self._language_model.config.is_encoder_decoder:
+        #     input_str = [s + self._tokeniser.eos_token for s in input_str]
         generated_output_str = list()
         batch_size = len(sample)
         for idx in range(0, len(input_str), batch_size):

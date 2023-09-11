@@ -244,7 +244,11 @@ class ChatDataset(Dataset):
                 'labels': labels
             }
         else:
-            input_strings = [self._prepare_sample(sample) + self._tokeniser.eos_token for sample in samples]
+            input_strings = [
+                (self._tokeniser.bos_token if self._tokeniser.bos_token is not None else self._tokeniser.eos_token) +
+                self._prepare_sample(sample) + self._tokeniser.eos_token
+                for sample in samples
+            ]
             input_encodings: BatchEncoding = self._tokeniser(
                 input_strings, return_tensors='pt', padding=True, truncation=True
             )

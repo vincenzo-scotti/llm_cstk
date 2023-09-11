@@ -69,6 +69,7 @@ INFO_ID: str = 'Info:'
 CONTEXT_ID: str = 'Dialogue:'
 RESPONSE_ID: str = 'Response:'
 SYSTEM_ID: str = 'System'
+REPORT_ID: str = 'Report'
 
 # Tasks
 
