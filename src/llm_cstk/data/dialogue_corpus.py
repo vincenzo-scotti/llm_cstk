@@ -207,7 +207,11 @@ class ChatDataset(Dataset):
             labels[mask] = IGNORE_IDX
             tensor_data = (src_encoding, tgt_encoding, labels)
         else:
-            input_strings = [self._prepare_sample(sample) + self._tokeniser.eos_token for sample in samples]
+            input_strings = [
+                (self._tokeniser.bos_token if self._tokeniser.bos_token is not None else self._tokeniser.eos_token) +
+                self._prepare_sample(sample) + self._tokeniser.eos_token
+                for sample in samples
+            ]
             input_encodings: BatchEncoding = self._tokeniser(
                 input_strings, return_tensors='pt', padding=True, truncation=True
             )

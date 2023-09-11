@@ -351,7 +351,11 @@ class DialogueLM(pl.LightningModule):
             else:
                 input_encodings = self._tokeniser(
                     [
-                        s_in + self._tokeniser.eos_token + s_out
+                        (
+                            self._tokeniser.bos_token
+                            if self._tokeniser.bos_token is not None
+                            else self._tokeniser.eos_token
+                        ) + s_in + self._tokeniser.eos_token + s_out
                         for s_in, s_out in zip(
                             input_str[idx:idx + batch_size],
                             output_prefix_str[idx:idx + batch_size]
