@@ -39,11 +39,11 @@ To install all the required packages within an [Anaconda](https://anaconda.org) 
 
 ```bash
 # Create an Anaconda environment
-conda create -n llm_cstk python=3.10 cudatoolkit=11.6
+conda create -n llm_cstk python=3.10 cudatoolkit=11.8
 # Activate anaconda environment
 conda activate llm_cstk
 # Install packages
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 > [!NOTE]  
