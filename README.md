@@ -68,8 +68,7 @@ We also assume that the services are available at the following URL: `http://127
 ### Chat
 
 Most of the functionalities are powered using an LLM.
-The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.13971) and [Llama 2](https://arxiv.org/abs/2307.09288) models available through the [`llama-cpp-python` library](https://github.com/abetlen/llama-cpp-python/tree/main).
-In most cases, the service hosting the LLM is started transparently.
+The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.13971) and [Llama 2](https://arxiv.org/abs/2307.09288) models (and other derivative models) available through the [`llama-cpp-python` library](https://github.com/abetlen/llama-cpp-python/tree/main).
 
 The chat-related functionalities are:
 - **Response generation**: The chatbot is used to suggest possible responses in a conversation.
@@ -209,6 +208,8 @@ LLMs can be used to:
   'response': {'speaker': 'AI', 'text': 'Son Goku, of course.'}
 }
 ```
+
+
 
 ### Search
 
@@ -481,7 +482,7 @@ nohup python ./src/script/fine_tune_lm.py --config_file_path ./resources/configs
 
 It is possible to monitor the fine-tuning process using [Tensorboard](https://www.tensorflow.org/tensorboard).
 
-To connect to a remote server and monitor the fine-tuning process, connect via ssh to your machine using a tunnel
+To connect to a remote server and monitor the fine-tuning process, connect via ssh to your remote machine using a tunnel:
 
 ```bash
 ssh user@adderess -L 16006:127.0.0.1:6006
@@ -557,7 +558,6 @@ nohup python ./src/script/retrieval_server.py --config_file_path ./resources/con
 ```
 
 ## Acknowledgements
-
 
 - Vincenzo Scotti: ([vincenzo.scotti@polimi.it](mailto:vincenzo.scotti@polimi.it))
 - Mark James Carman: ([mark.carman@polimi.it](mailto:mark.carman@.polimi.it))
