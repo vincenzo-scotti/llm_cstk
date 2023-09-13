@@ -67,10 +67,10 @@ class DocRetriever(_Singleton):
         reranking_query_cleaner: Optional[pt.Transformer] = self._transformer_factory.query_cleaner(
             reranking
         ) if reranking is not None else None
-        # Doc loading (optional)
-        raw_doc_loader: Optional[pt.Transformer] = self._transformer_factory.raw_doc_loader(
-            corpus, doc_chunk_size, doc_chunk_stride, ranking
-        ) if chunk_doc else None
+        # Doc pre-ranking (optional)
+        doc_pre_ranker: pt.Transformer = self._transformer_factory.doc_ranker(
+            'lexical', corpus, metadata=True  # ranking, corpus, metadata=True  # TODO find better solution like averaging doc embeddings when registering them
+        ) if chunk_doc and doc_chunk_size is not None and doc_chunk_stride is not None else None
         # Doc chunking (optional)
         doc_chunks_generator: Optional[pt.Transformer] = self._transformer_factory.doc_chunks_generator(
             corpus, doc_chunk_size, doc_chunk_stride, ranking
@@ -79,14 +79,12 @@ class DocRetriever(_Singleton):
         doc_ranker: pt.Transformer = self._transformer_factory.doc_ranker(
             ranking,
             corpus,
-            chunk_doc=chunk_doc,
-            chunk_size=doc_chunk_size,
-            chunk_stride=doc_chunk_stride,
-            reranking=reranking is not None,
+            chunk_doc=chunk_doc and doc_chunk_size is None and doc_chunk_stride is None,
+            reranking=reranking is not None
         )
         # Reranking (optional)
         doc_reranker: Optional[pt.Transformer] = self._transformer_factory.doc_reranker(
-            reranking, corpus, chunk_doc=chunk_doc, chunk_size=doc_chunk_size, chunk_stride=doc_chunk_stride
+            reranking, corpus, chunk_doc=chunk_doc and doc_chunk_size is None and doc_chunk_stride is None
         ) if reranking is not None else None
         # Doc chunks aggregation (optional)
         doc_chunks_aggregator: Optional[pt.Transformer] = self._transformer_factory.doc_chunks_aggregator(
@@ -100,8 +98,8 @@ class DocRetriever(_Singleton):
         pipeline: pt.Transformer = doc_ranker
         if doc_chunks_generator is not None:
             pipeline = doc_chunks_generator >> pipeline
-        if raw_doc_loader is not None:
-            pipeline = raw_doc_loader >> pipeline
+        if doc_pre_ranker is not None:
+            pipeline = doc_pre_ranker >> pipeline
         if ranking_query_cleaner is not None:
             pipeline = ranking_query_cleaner >> pipeline
         if reranking_query_cleaner is not None:
@@ -131,7 +129,7 @@ class DocRetriever(_Singleton):
         ) if reranking is not None else self._transformer_factory.query_cleaner(ranking)
         # Doc loading (optional)
         raw_doc_loader: Optional[pt.Transformer] = self._transformer_factory.raw_doc_loader(
-            corpus, doc_chunk_size, doc_chunk_stride, reranking if reranking is not None else ranking
+            corpus
         ) if BODY not in search_results.columns else None
         # Doc chunking
         doc_chunks_generator: pt.Transformer = self._transformer_factory.doc_chunks_generator(
