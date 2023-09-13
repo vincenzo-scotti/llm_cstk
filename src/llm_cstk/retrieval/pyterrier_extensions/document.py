@@ -25,6 +25,9 @@ def reset_text_col(df: pd.DataFrame) -> pd.DataFrame:
 
 
 class PTDocManager(_Singleton):
+    # TODO add long documents management with semantic embeddings
+    # TODO add olddocno management for chunked documents
+    # TODO add chunking hash for pre-chunked documents
     def __init__(self, data_dir_path: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data_dir_path: str = data_dir_path
