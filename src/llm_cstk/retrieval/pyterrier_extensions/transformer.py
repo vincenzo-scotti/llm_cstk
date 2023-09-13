@@ -54,30 +54,15 @@ class PTTransformerFactory(_Singleton):
 
     def raw_doc_loader(
             self,
-            corpus: str,
-            size: Optional[int],
-            stride: Optional[int],
-            scoring: Scoring
+            corpus: str
     ) -> Optional[pt.Transformer]:
-        if scoring == 'semantic':
-            if self._semantic_ranker.index_exists(corpus, True, size, stride):
-                return None
-            else:
-                return pt.text.get_text(
-                    pt.IndexRef.of(pt.DFIndexer(self._lexical_ranker.get_index_path(corpus)).path)
-                )
-        elif scoring == 'lexical':
-            if self._lexical_ranker.index_exists(corpus, True, size, stride):
-                return None
-            else:
-                return pt.text.get_text(
-                    pt.IndexRef.of(pt.DFIndexer(self._lexical_ranker.get_index_path(corpus)).path)
-                )
-        else:
-            raise ValueError(
-                f"Unknown scoring method for (re)ranking: \'{scoring}\', "
-                f"accepted values are {', '.join(f'{repr(t)}' for t in Scoring)}"
+        if self._lexical_ranker.index_exists(corpus, True):
+            return pt.text.get_text(
+                pt.IndexRef.of(pt.DFIndexer(self._lexical_ranker.get_index_path(corpus)).path), metadata=METADATA
             )
+        else:
+            # TODO add manual document text loading
+            raise NotImplementedError()
 
     def doc_chunks_generator(
             self,
@@ -85,7 +70,7 @@ class PTTransformerFactory(_Singleton):
             size: Optional[int],
             stride: Optional[int],
             scoring: Scoring,
-            snippet: bool = False,
+            snippet: bool = False
     ) -> Optional[pt.Transformer]:
         if scoring == 'semantic':
             if self._semantic_ranker.index_exists(corpus, True, size, stride):
@@ -118,22 +103,20 @@ class PTTransformerFactory(_Singleton):
             scoring: Scoring,
             corpus: str,
             chunk_doc: bool = False,
-            chunk_size: Optional[int] = None,
-            chunk_stride: Optional[int] = None,
             reranking: bool = False,
-            cutoff: bool = True
+            cutoff: bool = True,
+            metadata: bool = False
     ) -> pt.Transformer:
         if scoring == 'semantic':
             return self._semantic_ranker.get_ranking_model(
                 corpus,
                 chunk_doc=chunk_doc,
-                chunk_size=chunk_size,
-                chunk_stride=chunk_stride,
                 reranking=reranking,
-                cutoff=cutoff
+                cutoff=cutoff,
+                metadata=metadata
             )
         elif scoring == 'lexical':
-            return self._lexical_ranker.get_ranking_model(corpus, reranking=reranking, cutoff=cutoff)
+            return self._lexical_ranker.get_ranking_model(corpus, reranking=reranking, cutoff=cutoff, metadata=metadata)
         else:
             raise ValueError(
                 f"Unknown scoring method for ranking: \'{scoring}\', "
@@ -144,16 +127,12 @@ class PTTransformerFactory(_Singleton):
             self,
             scoring: Scoring,
             corpus: str,
-            chunk_doc: bool = False,
-            chunk_size: Optional[int] = None,
-            chunk_stride: Optional[int] = None
+            chunk_doc: bool = False
     ) -> pt.Transformer:
         if scoring == 'semantic':
-            return self._semantic_ranker.get_reranking_model(
-                corpus, chunk_doc=chunk_doc, chunk_size=chunk_size, chunk_stride=chunk_stride
-            )
+            return self._semantic_ranker.get_reranking_model(corpus, chunk_doc=chunk_doc)
         elif scoring == 'lexical':
-            return self._lexical_ranker.get_reranking_model(corpus)
+            return self._lexical_ranker.get_reranking_model(corpus, chunk_doc=chunk_doc)
         else:
             raise ValueError(
                 f"Unknown scoring method for reranking: \'{scoring}\', "
@@ -164,12 +143,13 @@ class PTTransformerFactory(_Singleton):
             self,
             scoring: Scoring,
             corpus: str,
-            ranking: bool = True
+            ranking: bool = True,
+            txt_col: str = TEXT,
     ) -> pt.Transformer:
         if scoring == 'semantic':
-            return self._semantic_ranker.get_scoring_model(corpus, txt_col=BODY, ranking=ranking)
+            return self._semantic_ranker.get_scoring_model(corpus, txt_col=txt_col, ranking=ranking)
         elif scoring == 'lexical':
-            return self._lexical_ranker.get_scoring_model(corpus, txt_col=BODY, ranking=ranking)
+            return self._lexical_ranker.get_scoring_model(corpus, txt_col=txt_col, ranking=ranking)
         else:
             raise ValueError(
                 f"Unknown scoring method for (re)ranking: \'{scoring}\', "
