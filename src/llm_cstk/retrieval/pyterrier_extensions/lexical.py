@@ -36,7 +36,8 @@ class LexicalPTRanker(_PTRanker, _Singleton):
         return self._model_cache[model_id]
 
     def get_ranking_model(
-            self, corpus: str,
+            self,
+            corpus: str,
             chunk_doc: bool = False,
             reranking: bool = False,
             cutoff: bool = True,
