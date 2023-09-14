@@ -138,6 +138,7 @@ LLMs can be used to:
 >>> url = 'http://127.0.0.1:8999/generate/candidate_responses/llm'
 >>> req_data = {
 ...   'params': {
+...     'n_samples': 3,  # `type: int`, the number of samples to generate
 ...     'speaker': 'AI',  # `type: str`, the identifier of the response's speaker
 ...     'info': 'Python application crashing at startup',  # `type: Optional[str]`, a short description of the ongoing dialogue (optional)
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
@@ -159,7 +160,11 @@ LLMs can be used to:
 >>> output = requests.post(url, data=req_data).json
 >>> print(output)
 {
-  'response': {'speaker': 'AI', 'text': 'I think you should reboot your system.'}
+  'candidates': [  # `type: List[Dict[str, str]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text
+    {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
+    {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
+    {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
+  ]
 }
 ```
 
