@@ -301,7 +301,12 @@ class DialogueLM(pl.LightningModule):
         return tuple(zip(*samples_batch))
 
     def generate(
-            self, sample: Union[List[Dict], Dict], evaluation: bool = False, output_prefix: bool = False, **kwargs
+            self,
+            sample: Union[List[Dict], Dict],
+            evaluation: bool = False,
+            output_prefix: bool = False,
+            drop_output_prefix: bool = True,
+            **kwargs
     ) -> Union[List[str], Tuple[List[str], List[str], List[str]], str, Tuple[str, str, str]]:
         # Single sample
         if not isinstance(sample, list):
@@ -371,6 +376,8 @@ class DialogueLM(pl.LightningModule):
                     self._language_model.generate(**input_encodings, **kwargs)[:, input_ids_len:],
                     skip_special_tokens=True
                 )
+        if output_prefix and drop_output_prefix:
+            generated_output_str = [s.split(':')[1].strip() for s in generated_output_str]
         if evaluation:
             return input_str, target_output_str, generated_output_str
         else:
