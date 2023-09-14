@@ -19,44 +19,44 @@ ai_assistant: Optional[AIAssistant] = None
 @flask_app.post("/generate")
 def generate():
     params = json.loads(request.data)['params']
-    output = ai_assistant.generate(**params).to_json()
+    output = ai_assistant.generate(**params)
     response = jsonify(output)
 
     return response
 
 
 @flask_app.post("/generate/candidate_responses/custom_lm")
-def generate_candidate_responses():
+def generate_candidate_responses_custom_lm():
     params = json.loads(request.data)['params']
-    candidates = ai_assistant.generate_candidate_responses_custom_lm(**params).to_json()
-    response = jsonify(candidates)
+    output = ai_assistant.candidate_responses_custom_lm(**params)
+    response = jsonify({'candidates': output})
 
     return response
 
 
 @flask_app.post("/generate/candidate_responses/llm")
-def generate_candidate_responses():
+def generate_candidate_responses_llm():
     params = json.loads(request.data)['params']
-    candidate = ai_assistant.generate_candidate_responses_llm(**params).to_json()
-    response = jsonify(candidate)
+    output = ai_assistant.candidate_responses_llm(**params)
+    response = jsonify({'candidates': output})
 
     return response
 
 
 @flask_app.post("/generate/info_extraction")
-def generate_doc_analysis_response():
+def generate_info_extraction_response():
     params = json.loads(request.data)['params']
-    output = ai_assistant.info_extraction(**params).to_json()
-    response = jsonify(output)
+    output = ai_assistant.info_extraction(**params)
+    response = jsonify({'response': output})
 
     return response
 
 
 @flask_app.post("/generate/kb_qa")
-def generate_kb_response():
+def generate_kb_qa_response():
     params = json.loads(request.data)['params']
-    output = ai_assistant.kb_qa(**params).to_json()
-    response = jsonify(output)
+    output = ai_assistant.kb_qa(**params)
+    response = jsonify({'response': output})
 
     return response
 
