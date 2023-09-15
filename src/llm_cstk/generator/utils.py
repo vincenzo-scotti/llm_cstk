@@ -38,4 +38,5 @@ RELEVANT_DOCS: str = 'docs'
 RELEVANT_DOC: str = 'docs'
 
 MODEL: str = 'model'
+CONFIGS: str = 'configs'
 GENERATE_PARAMS: str = 'generate_params'
