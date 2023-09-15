@@ -61,7 +61,7 @@ class DialogueLM(pl.LightningModule):
         if quantisation is not None:
             self._submodules_params['model']['load_in_4bit'] = quantisation == 4
             self._submodules_params['model']['load_in_8bit'] = quantisation == 8
-            self._submodules_params['model']['torch_dtype'] = torch.bfloat16 if device.type == 'cuda' else torch.float32
+            self._submodules_params['model']['torch_dtype'] = torch.bfloat16 if self.model_device.type == 'cuda' else torch.float32
         self._language_model: PreTrainedModel = self._load_language_model(
             self.transformer, **self._submodules_params['model']
         )

@@ -13,7 +13,9 @@ class CustomLMFactory(_Singleton):
     def lm(self, task: Task, corpus: str) -> CustomLM:
         if self.configs[task][corpus][MODEL] not in self._transformer_lm_cache:
             if task == CANDIDATE_RESPONSES:
-                transformer_lm = DialogueLM.load(self.configs[task][corpus][MODEL])
+                transformer_lm = DialogueLM.load(
+                    self.configs[task][corpus][MODEL], **self.configs[task][corpus][CONFIGS]
+                )
             else:
                 raise ValueError(
                     f"Unknown task type: `{task}`, accepted values are {', '.join(f'{repr(t)}' for t in Task)}"
