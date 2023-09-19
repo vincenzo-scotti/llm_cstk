@@ -41,8 +41,17 @@ class AIAssistant(_Singleton):
         else:
             return self._llm.generate_params.get(task, dict())
 
-    def generate_llm(self, utterances: List[Dict[str, str]], task: Optional[Task] = None) -> Dict[str, str]:
-        generate_params = self._get_llm_params(task)
+    def generate_llm(
+            self,
+            utterances: List[Dict[str, str]],
+            task: Optional[Task] = None,
+            custom_generate_params: Optional[Dict] = None
+    ) -> Dict[str, str]:
+        #
+        if custom_generate_params is None:
+            custom_generate_params = dict()
+        #
+        generate_params = self._get_llm_params(task) | custom_generate_params
         response: str = self._llm.completion(utterances, **generate_params)
         output: Dict[str, str] = {SPEAKER: AI, TEXT: response}
 
@@ -55,8 +64,11 @@ class AIAssistant(_Singleton):
 
         return custom_lm, instructions, generate_params
 
-    def generate_custom_lm(self, sample, task: Task, corpus: str, *args, **kwargs) -> Dict[str, str]:
+    def generate_custom_lm(
+            self, sample, task: Task, corpus: str, *args, custom_generate_params: Optional[Dict] = None, **kwargs
+    ) -> Dict[str, str]:
         custom_lm, instructions, generate_params = self._get_custom_lm_params(task, corpus)
+        generate_params |= custom_generate_params
         sample[INSTRUCTIONS] = instructions
         response: str = custom_lm.generate(sample, *args, **kwargs, **generate_params)
         output: Dict[str, str] = {SPEAKER: AI, TEXT: response}
@@ -79,6 +91,7 @@ class AIAssistant(_Singleton):
             info: Optional[str] = None,
             candidates: Optional[List[Dict[str, str]]] = None,
             relevant_documents: Optional[List[str]] = None,
+            custom_generate_params: Optional[Dict] = None,
             n_samples: int = 1
     ) -> List[Dict[str, str]]:
         if info is not None:
@@ -105,7 +118,10 @@ class AIAssistant(_Singleton):
                 TEXT: f"{template['prefix']}{BLOCK_SEP}{relevant_documents}"
             })
 
-        return [self.generate_llm(utterances, task=CANDIDATE_RESPONSES) for _ in range(n_samples)]
+        return [
+            self.generate_llm(utterances, task=CANDIDATE_RESPONSES, custom_generate_params=custom_generate_params)
+            for _ in range(n_samples)
+        ]
 
     def candidate_responses_custom_lm(
             self,
@@ -113,15 +129,23 @@ class AIAssistant(_Singleton):
             speaker: str,
             corpus: str,
             info: Optional[str] = None,
+            custom_generate_params: Optional[Dict] = None,
             n_samples: int = 1
     ) -> List[Dict[str, str]]:
+        if custom_generate_params is None:
+            custom_generate_params = {'output_prefix': True}
+        else:
+            custom_generate_params['output_prefix'] = True
         #
         utterances.append({SPEAKER: speaker})
         dialogue: Dict = {INFO: info, UTTERANCES: utterances}
-        #
-        kwargs = {'output_prefix': True}
 
-        return [self.generate_custom_lm(dialogue, CANDIDATE_RESPONSES, corpus, **kwargs) for _ in range(n_samples)]
+        return [
+            self.generate_custom_lm(
+                dialogue, CANDIDATE_RESPONSES, corpus, custom_generate_params=custom_generate_params
+            )
+            for _ in range(n_samples)
+        ]
 
     def candidate_responses(
             self,
@@ -144,7 +168,8 @@ class AIAssistant(_Singleton):
     def info_extraction(
             self,
             utterances: List[Dict[str, str]],
-            document: str
+            document: str,
+            custom_generate_params: Optional[Dict] = None
     ) -> Dict[str, str]:
         instructions = self._llm.instructions.get(INFO_EXTRACTION)
         if instructions is not None:
@@ -152,12 +177,13 @@ class AIAssistant(_Singleton):
         template = self._llm.templates.get(INFO_EXTRACTION)[RELEVANT_DOC]
         utterances.append({SPEAKER: SYSTEM, TEXT: template['format'].format(document)})
 
-        return self.generate_llm(utterances)
+        return self.generate_llm(utterances, custom_generate_params=custom_generate_params)
 
     def kb_qa(
             self,
             utterances: List[Dict[str, str]],
-            relevant_documents: Optional[List[str]] = None
+            relevant_documents: Optional[List[str]] = None,
+            custom_generate_params: Optional[Dict] = None
     ) -> Dict[str, str]:
         instructions = self._llm.instructions.get(KB_QA)
         if instructions is not None:
@@ -170,4 +196,4 @@ class AIAssistant(_Singleton):
                       f"{BLOCK_SEP.join(template['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1))}"
             })
 
-        return self.generate_llm(utterances)
+        return self.generate_llm(utterances, custom_generate_params=custom_generate_params)
