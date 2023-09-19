@@ -96,8 +96,7 @@ SEMANTIC_SEARCH_MAPPING: Dict[SemanticSearch, Type[SentenceTransformer | CrossEn
     'bienc': SentenceTransformer, 'xenc': CrossEncoder
 }
 
-DOCNO_BIENC_CACHE: str = DOCNO
-EMBEDDINGS_BIENC_CACHE: str = 'embeddings'
+EMBEDDINGS_ID: str = 'embeddings'
 
 DOT_PROD_SPACE: str = 'ip'
 COS_SIM_SPACE: str = 'cosine'

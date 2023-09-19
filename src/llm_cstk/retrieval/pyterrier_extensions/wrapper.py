@@ -5,6 +5,7 @@ from functools import partial
 import pickle
 import bz2
 
+import torch
 from sentence_transformers import util
 
 import pandas as pd
@@ -16,21 +17,29 @@ from .utils import *
 
 class _SemanticPTTransformer(pt.Transformer):
     TRANSFORMER_TYPE: Optional[Union[Type[SentenceTransformer], Type[CrossEncoder]]] = None
-    _transformer_encoder_cache: Dict[str, SentenceTransformer] = dict()
+    _transformer_encoder_cache: Dict[str, Union[SentenceTransformer, CrossEncoder]] = dict()
+    _data_df_cache: Dict[str, pd.DataFrame] = dict()
+    _essential_data_df_cache: Dict[str, pd.DataFrame] = dict()
 
     def __init__(
             self,
             transformer: str,
-            data_df: Optional[pd.DataFrame] = None,
+            data_df_path: Optional[str] = None,
             metadata: bool = False,
             device: Optional[torch.device] = None
     ):
         self.transformer: str = transformer
-        self.data_df: Optional[pd.DataFrame] = data_df
+        self.data_df_path: Optional[str] = data_df_path
         self.metadata: bool = metadata
         self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self._transformer_encoder: SentenceTransformer = self._load_transformer_encoder()
+        self._data_df: Optional[pd.DataFrame] = self._load_data_df(
+            self.data_df_path
+        ) if self.data_df_path is not None and self.metadata else None
+        self._essential_data_df: Optional[pd.DataFrame] = self._load_essential_data_df(
+            self.data_df_path
+        ) if self.data_df_path is not None and not self.metadata else None
 
     def _load_transformer_encoder(self) -> SentenceTransformer:
         if self.transformer not in self._transformer_encoder_cache:
@@ -39,22 +48,45 @@ class _SemanticPTTransformer(pt.Transformer):
 
         return self._transformer_encoder_cache[self.transformer]
 
+    def _load_data_df(self, path: str) -> pd.DataFrame:
+        if path not in self._data_df_cache:
+            self._data_df_cache[path] = pd.read_csv(path, dtype=DTYPES)
+
+        return self._data_df_cache[path]
+
+    def _load_essential_data_df(self, path: str) -> pd.DataFrame:
+        if path not in self._essential_data_df_cache:
+            self._essential_data_df_cache[path] = pd.read_csv(
+                path, dtype=DTYPES_ESSENTIAL, usecols=list(DTYPES_ESSENTIAL.keys())
+            )
+
+        return self._essential_data_df_cache[path]
+
     def _prepare_data_search(self, queries: pd.DataFrame) -> Tuple:
         raise NotImplementedError()
 
-    def _get_doc_ids(self, search_results: pd.DataFrame) -> List[str]:
-        raise NotImplementedError()
+    def _get_doc_ids(self, idxs: List[int]) -> List[Tuple[str, str]]:
+        # Get DataFrame with document info
+        df: pd.DataFrame = self._essential_data_df if self._essential_data_df is not None else self._data_df
 
-    def _get_doc_idxs_rescore(self, input_results: pd.DataFrame) -> List[List[int]]:
-        if DOCID in input_results.columns:
-            return input_results.groupby(QID, sort=False)[DOCID].astype(int).apply(list).values.tolist()
-        elif DOCNO in input_results.columns:
-            if DOCID in self.data_df.columns:
-                ...
-            else:
-                ...
-        else:
-            raise ValueError("Unable to recover document indices.")
+        return df.iloc[idxs][[DOCNO, DOCID]].values.tolist()
+
+    def _get_doc_idxs(self, ids: List[str]) -> List[int]:
+        # Get DataFrame with document info
+        df: pd.DataFrame = self._essential_data_df if self._essential_data_df is not None else self._data_df
+        #
+        ids_mapping = {id_: i for i, id_ in enumerate(ids)}
+
+        return sorted(df[df[DOCNO].isin(ids)].index.values.tolist(), key=lambda idx: ids_mapping[df.iloc[idx][DOCNO]])
+
+    # Gather index of the document in the data frame
+    def _get_doc_ids_rescore(self, input_results: pd.DataFrame) -> List[List[Tuple[str, str]]]:
+        assert DOCNO in input_results.columns and DOCID in input_results.columns, "Unable to recover document identifiers."
+
+        return [
+            input_results[[DOCNO, DOCID]].values.tolist()
+            for _, input_results_group in input_results.groupby(QID, sort=False)
+        ]
 
     def _prepare_data_rescore(self, queries: pd.DataFrame, input_results: pd.DataFrame) -> Tuple:
         raise NotImplementedError()
@@ -81,44 +113,40 @@ class _SemanticPTTransformer(pt.Transformer):
 
     def transform(self, queries: Union[str, List[str], pd.DataFrame]) -> pd.DataFrame:
         # Adapted from https://pyterrier.readthedocs.io/en/latest/_modules/pyterrier/batchretrieve.html#BatchRetrieve
-        # Prepare queries  #NOTE this is taken from BatchRetrieve
+        # Prepare queries  # NOTE this is taken from BatchRetrieve
         if not isinstance(queries, pd.DataFrame):
             queries = coerce_queries_dataframe(queries)
-        # Check if document IDs or scores are provided  #NOTE this is taken from BatchRetrieve
+        # Check if document IDs or scores are provided  # NOTE this is taken from BatchRetrieve
         docno_provided: bool = DOCNO in queries.columns
         docid_provided: bool = DOCID in queries.columns
         scores_provided: bool = SCORE in queries.columns
-        # Isolate unique queries if the model is being used for rescoring  #NOTE this is adapted from BatchRetrieve
+        # Isolate unique queries if the model is being used for rescoring  # NOTE this is adapted from BatchRetrieve
         input_results: Optional[pd.DataFrame] = None
         if docno_provided or docid_provided:
             input_results = queries
             queries = input_results[[QID, QUERY]].dropna(axis=0, subset=[QUERY]).drop_duplicates()
-        # Enforce string type on query IDs  #NOTE this is adapted from BatchRetrieve
+        # Enforce string type on query IDs  # NOTE this is adapted from BatchRetrieve
         if queries[QID].dtype != str:
             queries[QID] = queries[QID].astype(str)
         # Prepare data for search
         search_input = self._prepare_data(queries, input_results)
         # Run queries
-        search_results: pd.DataFrame
-        search_results = self._search(input_results, *search_input)
+        search_results: pd.DataFrame = self._search(input_results, *search_input)
         # Add optional metadata
-        if self.metadata:  # TODO check back this part
-            search_results = search_results.merge(self.data_df[METADATA], on=[DOCID])
+        if self.metadata:
+            # NOTE this should cause problems when using metadata on custom chunks of the documents,
+            #  however such case should not happen
+            search_results = search_results.merge(self._data_df[METADATA], on=[DOCNO])
         # Add missing data from query
         query_output_columns = queries.columns[
             (queries.columns == QID) | (~queries.columns.isin(search_results.columns))
         ]
         search_results = search_results.merge(queries[query_output_columns], on=[QID])
-        if DOCNO not in search_results.columns:
-            if self.data_df is not None:
-                search_results = search_results.merge(self.data_df[[DOCID, DOCNO]], on=[DOCID])
-            else:
-                search_results[DOCNO] = self._get_doc_ids(search_results)
 
         return search_results
 
     def _encoder_apply(self, df: pd.DataFrame, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def to_semantic_scorer(self, **kwargs) -> pt.Transformer:
         # Create re-scorer
@@ -129,6 +157,8 @@ class _SemanticPTTransformer(pt.Transformer):
 
 class BiEncoderPTTransformer(_SemanticPTTransformer):
     TRANSFORMER_TYPE = SentenceTransformer
+    _ann_index_cache: Dict[str, ANNIndex] = dict()
+    _pre_computed_embeddings_cache: Dict[str, EmbeddingsCache] = dict()
 
     def __init__(
             self,
@@ -142,16 +172,13 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
             indexing_params: Optional[Dict] = None,
             **kwargs
     ):
+        indexing_params = ANN_SEARCH_INDEX_DEFAULT_PARAMETERS.get(ann) if indexing_params is None else indexing_params
         super().__init__(*args, **kwargs)
         # Transformer
         self.ann: Optional[ANNSearch] = ann
         self.ann_index_path: Optional[str] = ann_index_path
-        self._ann_index: Optional[ANNIndex] = None
         self.indexing_params: Optional[Dict] = indexing_params
-        if self.indexing_params is None and self.ann is not None:
-            self.indexing_params = ANN_SEARCH_INDEX_DEFAULT_PARAMETERS[self.ann]
         self.pre_computed_embeddings_path: Optional[str] = pre_computed_embeddings_path
-        self._pre_computed_embeddings: Optional[EmbeddingsCache] = None
         # Vector space params
         self.tensors: bool = tensors
         self.normalise: bool = normalise
@@ -161,10 +188,12 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
         self._pairwise_score_fn: Callable = util.pairwise_dot_score if self.normalise else util.pairwise_cos_sim
         self._stacking_fn: Callable = torch.hstack if self.tensors else np.hstack
         #
-        if self.ann is not None and self.ann_index_path is not None and os.path.exists(self.ann_index_path):
-            self.load_ann_index()
-        if pre_computed_embeddings_path is not None and os.path.exists(self.pre_computed_embeddings_path):
-            self.load_pre_computed_embeddings()
+        self._ann_index: Optional[ANNIndex] = None
+        if self.ann is not None and self.ann_index_path is not None:
+            self._ann_index: Optional[ANNIndex] = self._load_ann_index()
+        self._pre_computed_embeddings: Optional[EmbeddingVector] = None
+        if pre_computed_embeddings_path is not None:
+            self._pre_computed_embeddings: Optional[EmbeddingVector] = self._load_pre_computed_embeddings()
 
     def embed_text(self, text: Union[str, List[str]]) -> EmbeddingVector:
         if isinstance(text, str):
@@ -176,73 +205,88 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
             convert_to_tensor=self.tensors,
             device=self.device.type
         )
+        if isinstance(embeddings, torch.Tensor):
+            embeddings = embeddings.cpu()
 
         return embeddings
+
+    def _load_pre_computed_embeddings(self) -> Optional[EmbeddingVector]:
+        if self.pre_computed_embeddings_path is not None and os.path.exists(self.pre_computed_embeddings_path):
+            if self.pre_computed_embeddings_path not in self._pre_computed_embeddings_cache:
+                # Load embedding cache from binary file
+                with bz2.BZ2File(self.pre_computed_embeddings_path, 'rb') as f:
+                    self._pre_computed_embeddings_cache[self.pre_computed_embeddings_path] = pickle.load(f)
+            return self._pre_computed_embeddings_cache[self.pre_computed_embeddings_path]
+        else:
+            return None
 
     def load_pre_computed_embeddings(self, path: Optional[str] = None) -> EmbeddingsCache:
         # Update attributes if required
         if path is not None:
             self.pre_computed_embeddings_path = path
         # Load embedding cache from binary file
-        with bz2.BZ2File(self.pre_computed_embeddings_path, 'rb') as f:
-            self._pre_computed_embeddings = pickle.load(f)
+        self._pre_computed_embeddings = self._load_pre_computed_embeddings()
 
         return self._pre_computed_embeddings
 
-    def save_pre_computed_embeddings(self, path: Optional[str] = None):
-        # Update attributes if required
-        if path is not None:
-            self.pre_computed_embeddings_path = path
+    def save_pre_computed_embeddings(self, path: str):
         # Serialise embedding cache in binary file
-        with bz2.BZ2File(self.pre_computed_embeddings_path, 'wb') as f:
+        with bz2.BZ2File(path, 'wb') as f:
             pickle.dump(self._pre_computed_embeddings, f)
 
-    def compute_doc_embeddings(self) -> EmbeddingsCache:
-        docs: List[str] = self.data_df[TEXT].values.tolist()
-        docnos: List[str] = self.data_df[DOCNO].values.tolist()
+    def compute_doc_embeddings(self) -> EmbeddingVector:
+        docs: List[str] = self._data_df[TEXT].values.tolist()
         embeddings: EmbeddingVector = self.embed_text(docs)
-        self._pre_computed_embeddings = {DOCNO_BIENC_CACHE: docnos, EMBEDDINGS_BIENC_CACHE: embeddings}
+        if isinstance(embeddings, torch.Tensor):
+            embeddings.cpu()
+        self._pre_computed_embeddings = embeddings
 
         return self._pre_computed_embeddings
 
-    def load_ann_index(self, ann: Optional[ANNSearch] = None, path: Optional[str] = None):
+    def _load_ann_index(self):
+        if self.ann is not None and self.ann_index_path is not None and os.path.exists(self.ann_index_path):
+            if self.ann_index_path not in self._ann_index_cache:
+                # Load index depending on ANN indexing tool
+                if self.ann == 'annoy':
+                    raise NotImplementedError()
+                elif self.ann == 'faiss':
+                    raise NotImplementedError()
+                elif self.ann == 'hnswlib':
+                    # Create the HNSWLIB index
+                    self._ann_index_cache[self.ann_index_path] = hnswlib.Index(
+                        space=DOT_PROD_SPACE if self.normalise else COS_SIM_SPACE,
+                        dim=self._transformer_encoder.get_sentence_embedding_dimension(),
+                    )
+                    # Load from file
+                    self._ann_index_cache[self.ann_index_path].load_index(self.ann_index_path)
+                else:
+                    raise ValueError(
+                        f"Unknown approximated nearest neighbor search approach: \'{self.ann}\', "
+                        f"accepted values are `None` or {', '.join(f'{repr(t)}' for t in ANNSearch)}"
+                    )
+            return self._ann_index_cache[self.ann_index_path]
+        else:
+            return None
+
+    def load_ann_index(self, ann: Optional[ANNSearch] = None, path: Optional[str] = None) -> Optional[ANNIndex]:
         # Update attributes if required
         if ann is not None:
             self.ann = ann
         if path is not None:
             self.ann_index_path = path
         # Load index depending on ANN indexing tool
-        if self.ann == 'annoy':
-            raise NotImplementedError()
-        elif self.ann == 'faiss':
-            raise NotImplementedError()
-        elif self.ann == 'hnswlib':
-            # Create the HNSWLIB index
-            self._ann_index = hnswlib.Index(
-                space=DOT_PROD_SPACE if self.normalise else COS_SIM_SPACE,
-                dim=self._transformer_encoder.get_sentence_embedding_dimension(),
-            )
-            # Load from file
-            self._ann_index.load_index(self.ann_index_path)
-        elif self.ann is None:
-            pass
-        else:
-            raise ValueError(
-                f"Unknown approximated nearest neighbor search approach: \'{self.ann}\', "
-                f"accepted values are `None` or {', '.join(f'{repr(t)}' for t in ANNSearch)}"
-            )
+        self._ann_index = self._load_ann_index()
 
-    def save_ann_index(self, path: Optional[str] = None):
-        # Update attributes if required
-        if path is not None:
-            self.ann_index_path = path
+        return self._ann_index
+
+    def save_ann_index(self, path: str):
         # Save index depending on ANN indexing tool
         if self.ann == 'annoy':
             raise NotImplementedError()
         elif self.ann == 'faiss':
             raise NotImplementedError()
         elif self.ann == 'hnswlib':
-            self._ann_index.save_index(self.ann_index_path)
+            self._ann_index.save_index(path)
         elif self.ann is None:
             pass
         else:
@@ -251,12 +295,7 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
                 f"accepted values are `None` or {', '.join(f'{repr(t)}' for t in ANNSearch)}"
             )
 
-    def build_ann_index(self, ann: Optional[ANNSearch] = None, indexing_params: Optional[Dict] = None):
-        # Update attributes if required
-        if ann is not None:
-            self.ann = ann
-        if indexing_params is not None:
-            self.indexing_params = indexing_params
+    def _build_ann_index(self):
         # Compute embeddings if not available
         if self._pre_computed_embeddings is None:
             self.compute_doc_embeddings()
@@ -272,30 +311,25 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
                 dim=self._transformer_encoder.get_sentence_embedding_dimension()
             )
             # Initialise index
-            self._ann_index.init_index(
-                len(self._pre_computed_embeddings[EMBEDDINGS_BIENC_CACHE]), **self.indexing_params
-            )
+            self._ann_index.init_index(len(self._pre_computed_embeddings), **self.indexing_params)
             # Train the index to find a suitable clustering
-            self._ann_index.add_items(
-                self._pre_computed_embeddings[EMBEDDINGS_BIENC_CACHE],
-                range(len(self._pre_computed_embeddings[EMBEDDINGS_BIENC_CACHE]))
-            )
-        elif self.ann is None:
-            pass
+            self._ann_index.add_items(self._pre_computed_embeddings, range(len(self._pre_computed_embeddings)))
         else:
             raise ValueError(
                 f"Unknown approximated nearest neighbor search approach: \'{self.ann}\', "
                 f"accepted values are `None` or {', '.join(f'{repr(t)}' for t in ANNSearch)}"
             )
 
-    def _get_doc_ids(self, search_results: pd.DataFrame) -> List[str]:
-        idxs: List[int] = search_results[DOCID].astype(int).values.tolist()
-        if self._pre_computed_embeddings is not None:
-            ids: List[str] = [self._pre_computed_embeddings[DOCNO_BIENC_CACHE][idx] for idx in idxs]
-        else:
-            raise ValueError("Unable to recover `docno` information")
+        return self._ann_index
 
-        return ids
+    def build_ann_index(self, ann: Optional[ANNSearch] = None, indexing_params: Optional[Dict] = None):
+        # Update attributes if required
+        if ann is not None:
+            self.ann = ann
+        if indexing_params is not None:
+            self.indexing_params = indexing_params
+        #
+        self._build_ann_index()
 
     def _prepare_data_search(self, queries: pd.DataFrame) -> Tuple[List[str], EmbeddingVector]:
         # Get query ids
@@ -307,27 +341,31 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
 
     def _prepare_data_rescore(
             self, queries: pd.DataFrame, input_results: pd.DataFrame
-    ) -> Tuple[List[str], EmbeddingVector, List[List[int]], EmbeddingVector]:
+    ) -> Tuple[List[str], EmbeddingVector, List[List[Tuple[str, str]]], List[EmbeddingVector]]:
         # NOTE duplicates are removed by transform
         # Get query ids
         query_ids = queries[QID].values.tolist()
         # Embed queries
         query_embeddings = self.embed_text(queries[QUERY].values)
         # Get document ids
-        doc_idxs: List[List[int]] = self._get_doc_idxs_rescore(input_results)
+        doc_ids: List[List[Tuple[str, str]]] = self._get_doc_ids_rescore(input_results)
         # Embed documents (or retrieve cached embeddings)
-        if self._pre_computed_embeddings is None and TEXT in input_results.columns:
-            doc_embeddings = self.embed_text(input_results[TEXT].values)
-        elif self.data_df is not None:
+        df: pd.DataFrame = self._essential_data_df if self._essential_data_df is not None else self._data_df
+        if TEXT in input_results.columns and not input_results[DOCNO].isin(df[DOCNO]).all():
+            doc_embeddings = [
+                self.embed_text(res_df[TEXT].values) for _, res_df in input_results.groupby(QID, sort=False)
+            ]
+        elif self._data_df is not None:
             if self._pre_computed_embeddings is None:
                 self.compute_doc_embeddings()
-            doc_embeddings = self._stacking_fn(
-                [self._pre_computed_embeddings[EMBEDDINGS_BIENC_CACHE][idxs] for idxs in doc_idxs]
-            )
+            doc_embeddings = [
+                self._pre_computed_embeddings[self._get_doc_idxs(res_df[DOCNO].values.tolist())]
+                for _, res_df in input_results.groupby(QID, sort=False)
+            ]
         else:
             raise ValueError('Missing document text')
 
-        return query_ids, query_embeddings, doc_idxs, doc_embeddings
+        return query_ids, query_embeddings, doc_ids, doc_embeddings
 
     def _ann_index_search(
             self, query_embeddings: EmbeddingVector
@@ -336,26 +374,26 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
             # Run approximated search using HNSWLib
             idxs, distances = self._ann_index.knn_query(
                 query_embeddings,
-                k=self.top_k if self.top_k is not None else len(self._pre_computed_embeddings[EMBEDDINGS_BIENC_CACHE]),  # NOTE: it is assuming embeddings exists if index exists
+                k=self.top_k if self.top_k is not None else len(self._pre_computed_embeddings),  # NOTE: it is assuming embeddings exists if index exists
                 filter=None
             )
             # Compute scores
             scores = 1 - distances
-            ranks = np.argsort(-scores, axis=1)
+            ordering = np.argsort(-scores, axis=1)
         else:
             raise NotImplementedError()
 
-        return idxs, scores, ranks
+        return idxs, scores, ordering
 
     def _semantic_search(self, query_ids: List[str], query_embeddings: EmbeddingVector) -> pd.DataFrame:
         # Depending on the approach, search through the collection
         if self._ann_index is not None:
-            idxs, scores, ranks = self._ann_index_search(query_embeddings)
+            idxs, scores, ordering = self._ann_index_search(query_embeddings)
             # Put together results
             results: List[Dict] = [
-                {QID: query_id, DOCID: idx, RANK: rank, SCORE: score}
-                for query_id, idxs, ranks, scores in zip(query_ids, idxs, ranks, scores)
-                for rank, (idx, score) in enumerate(zip(idxs[ranks], scores[ranks]))
+                {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
+                for query_id, idxs, ordering, scores in zip(query_ids, idxs, ordering, scores)
+                for rank, ((docno, docid), score) in enumerate(zip(self._get_doc_ids(idxs[ordering]), scores[ordering]))
             ]
         else:
             if self._pre_computed_embeddings is None:
@@ -363,15 +401,17 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
             # Plain search on entire collection embeddings
             hits = util.semantic_search(
                 query_embeddings,
-                self._pre_computed_embeddings[EMBEDDINGS_BIENC_CACHE],
+                self._pre_computed_embeddings,
                 score_function=self._score_fn,
-                top_k=self.top_k if self.top_k is not None else len(self._pre_computed_embeddings[EMBEDDINGS_BIENC_CACHE])
+                top_k=self.top_k if self.top_k is not None else len(self._pre_computed_embeddings)
             )
+            idxs = [[hit['corpus_id'] for hit in q_hits] for q_hits in hits]
+            scores = [[hit['score'] for hit in q_hits] for q_hits in hits]
             # Put together results
             results: List[Dict] = [
-                {QID: query_id, DOCID: hit['corpus_id'], RANK: rank, SCORE: hit['score']}
-                for query_id, query_hits in zip(query_ids, hits)
-                for rank, hit in enumerate(query_hits)
+                {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
+                for query_id, idxs, ordering, scores in zip(query_ids, idxs, scores)
+                for rank, ((docno, docid), score) in enumerate(zip(self._get_doc_ids(idxs), scores))
             ]
         # Store results in data frame
         results: pd.DataFrame = pd.DataFrame(results)
@@ -382,21 +422,20 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
             self,
             query_ids: List[str],
             query_embeddings: EmbeddingVector,
-            doc_ids: List[List[int]],
+            doc_ids: List[List[Tuple[str, str]]],
             doc_embeddings: List[EmbeddingVector]
     ) -> pd.DataFrame:
         # Create accumulator for results
         results: List[Dict] = []
         # Compute similarity between query-document pairs
-        for query_id, query_embeds, idxs, doc_embeds in zip(query_ids, query_embeddings, doc_ids, doc_embeddings):
+        for query_id, query_embeds, ids, doc_embeds in zip(query_ids, query_embeddings, doc_ids, doc_embeddings):
             # Compute new scores and new ranks
             scores: np.ndarray = self._score_fn(query_embeds, doc_embeds).squeeze()
-            ranks: np.ndarray = np.argsort(-scores, axis=-1)
+            ordering: np.ndarray = np.argsort(-scores, axis=-1)
             # Add current results to accumulator
-            idxs = np.array(idxs)
             results.extend([
-                {QID: query_id, DOCID: idx, RANK: rank, SCORE: score}
-                for rank, (idx, score) in enumerate(zip(idxs[ranks], scores[ranks]))
+                {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
+                for rank, ((docno, docid), score) in enumerate(zip([ids[i] for i in ordering], scores[ordering]))
             ])
         # Store results in data frame
         results: pd.DataFrame = pd.DataFrame(results)
@@ -417,9 +456,6 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
 class CrossEncoderPTTransformer(_SemanticPTTransformer):
     TRANSFORMER_TYPE = CrossEncoder
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def _prepare_data_search(self, queries: pd.DataFrame) -> Tuple[List[str], List[str]]:
         # Get query ids
         query_ids = queries[QID].values.tolist()
@@ -430,41 +466,44 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
 
     def _prepare_data_rescore(
             self, queries: pd.DataFrame, input_results: pd.DataFrame
-    ) -> Tuple[List[str], List[str], List[List[int]], List[List[str]]]:
+    ) -> Tuple[List[str], List[str], List[List[Tuple[str, str]]], List[List[str]]]:
         # NOTE duplicates are removed by transform
         # Get query ids
         query_ids = queries[QID].values.tolist()
         # Get query text
         queries = queries[QUERY].values.tolist()
         # Get document ids
-        doc_idxs: List[List[int]] = self._get_doc_idxs_rescore(input_results)
+        doc_ids: List[List[Tuple[str, str]]] = self._get_doc_ids_rescore(input_results)
         # Get documents text
         if TEXT in input_results.columns:
             # Get text from data frame
             docs: List[List[str]] = input_results.groupby(QID, sort=False)[TEXT].apply(list).values.tolist()
         # Use document text from stored documents
-        elif self.data_df is not None:
+        elif self._data_df is not None:
             # Get text from indices
-            docs = [self.data_df.iloc[idxs][TEXT].values.tolist() for idxs in doc_idxs]
+            docs = [
+                self._data_df.iloc[self._get_doc_idxs([docno for docno, _ in ids])][TEXT].values.tolist()
+                for ids in doc_ids
+            ]
         else:
             raise ValueError('Missing document text')
 
-        return query_ids, queries, doc_idxs, docs
+        return query_ids, queries, doc_ids, docs
 
     def semantic_search(self, query_ids: List[str], queries: List[str]) -> pd.DataFrame:
         # Get documents
-        docs: List[str] = self.data_df[TEXT].values.tolist()
-        idxs: np.ndarray = self.data_df[DOCNO].values
+        docs: List[str] = self._data_df[TEXT].values.tolist()
+        ids: np.ndarray = self._data_df[[DOCNO, DOCID]].values
         # Create accumulator for results
         results: List[Dict] = []
         # Iterate over queries
         for query_id, query in zip(query_ids, queries):
             scores = self._transformer_encoder.predict([[query, doc] for doc in docs])
-            ranks: np.ndarray = np.argsort(-scores, axis=1)
+            ordering: np.ndarray = np.argsort(-scores, axis=1)
             # Add current results to accumulator
             results.extend([
-                {QID: query_id, DOCID: idx, RANK: rank, SCORE: score}
-                for rank, (idx, score) in enumerate(zip(idxs[ranks], scores[ranks]))
+                {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
+                for rank, ((docno, docid), score) in enumerate(zip(ids[ordering], scores[ordering]))
             ])
         # Store results in data frame
         results: pd.DataFrame = pd.DataFrame(results)
@@ -480,12 +519,12 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         for query_id, query, idxs, docs in zip(query_ids, queries, doc_ids, documents):
             # Compute new scores and new ranks
             scores: np.ndarray = self._transformer_encoder.predict([[query, doc] for doc in docs])
-            ranks: np.ndarray = np.argsort(-scores, axis=1)
+            ordering: np.ndarray = np.argsort(-scores, axis=1)
             # Add current results to accumulator
-            idxs = np.array(idxs)
+            ids = np.array(self._get_doc_ids(idxs))
             results.extend([
-                {QID: query_id, DOCID: idx, RANK: rank, SCORE: score}
-                for rank, (idx, score) in enumerate(zip(idxs[ranks], scores[ranks]))
+                {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
+                for rank, ((docno, docid), score) in enumerate(zip([ids[i] for i in ordering], scores[ordering]))
             ])
         # Store results in data frame
         results: pd.DataFrame = pd.DataFrame(results)
