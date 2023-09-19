@@ -129,13 +129,11 @@ class PTDocManager(_Singleton):
                 )
                 pt_transformer_bienc = BiEncoderPTTransformer(
                     data_df=data_df,
-                    ann_index_path=ann_index_path,
-                    pre_computed_embeddings_path=pre_computed_embeddings_path,
                     **transformer_configs
                 )
                 pt_transformer_bienc.build_ann_index()
-                pt_transformer_bienc.save_ann_index()
-                pt_transformer_bienc.save_pre_computed_embeddings()
+                pt_transformer_bienc.save_ann_index(ann_index_path)
+                pt_transformer_bienc.save_pre_computed_embeddings(pre_computed_embeddings_path)
 
     def index_large_corpus(self, *args, **kwargs):
         raise NotImplementedError()
