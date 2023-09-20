@@ -128,7 +128,8 @@ class PTDocManager(_Singleton):
                     CHUNK_AFFIX in name
                 )
                 pt_transformer_bienc = BiEncoderPTTransformer(
-                    data_df=data_df,
+                    data_df_path=os.path.join(corpus_data_dir_path, file_name),
+                    metadata=True,
                     **transformer_configs
                 )
                 pt_transformer_bienc.build_ann_index()
