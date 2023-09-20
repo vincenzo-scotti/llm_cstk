@@ -33,6 +33,7 @@ INFO_EXTRACTION: str = 'info_extraction'
 KB_QA: str = 'kb_qa'
 
 # Templates
+DIALOGUE: str = 'dialogue'
 CANDIDATES: str = 'candidates'
 RELEVANT_DOCS: str = 'docs'
 RELEVANT_DOC: str = 'docs'
