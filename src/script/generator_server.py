@@ -25,19 +25,19 @@ def generate():
     return response
 
 
-@flask_app.post("/generate/candidate_responses/custom_lm")
+@flask_app.post("/generate/response_suggestion/custom_lm")
 def generate_candidate_responses_custom_lm():
     params = json.loads(request.data)['params']
-    output = ai_assistant.candidate_responses_custom_lm(**params)
+    output = ai_assistant.response_suggestion_custom_lm(**params)
     response = jsonify({'candidates': output})
 
     return response
 
 
-@flask_app.post("/generate/candidate_responses/llm")
+@flask_app.post("/generate/response_suggestion/llm")
 def generate_candidate_responses_llm():
     params = json.loads(request.data)['params']
-    output = ai_assistant.candidate_responses_llm(**params)
+    output = ai_assistant.response_suggestion_llm(**params)
     response = jsonify({'candidates': output})
 
     return response

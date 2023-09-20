@@ -28,7 +28,7 @@ HEADERS: Dict[str, str] = {'accept': 'application/json', 'Content-Type': 'applic
 COMPLETIONS_PATH: str = '/v1/chat/completions'
 
 # Tasks
-CANDIDATE_RESPONSES: str = 'candidate_responses'
+RESPONSE_SUGGESTION: str = 'response_suggestion'
 INFO_EXTRACTION: str = 'info_extraction'
 KB_QA: str = 'kb_qa'
 
