@@ -98,8 +98,10 @@ class AIAssistant(_Singleton):
         template = self._llm.templates[CANDIDATE_RESPONSES][UTTERANCES]
         dialogue: str = template['sep'].join(
             template['format'].format(utterance[SPEAKER], utterance[TEXT]).strip()
-            for utterance in utterances
+            for utterance in utterances[:template.get('n_ctx', len(utterances))]
         )
+        if len(utterances) > template.get('n_ctx', len(utterances)):
+            dialogue = f"{ELLIPS}{template['sep']}{dialogue}"
         if info is not None:
             dialogue = f"{info}{template['sep']}{dialogue}"
         #
