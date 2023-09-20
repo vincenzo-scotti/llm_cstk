@@ -69,7 +69,6 @@ class AIAssistant(_Singleton):
             self, sample, task: Task, corpus: str, *args, custom_generate_params: Optional[Dict] = None, **kwargs
     ) -> Dict[str, str]:
         custom_lm, instructions, generate_params = self._get_custom_lm_params(task, corpus)
-        generate_params |= custom_generate_params
         sample[INSTRUCTIONS] = instructions
         response: str = custom_lm.generate(sample, *args, **kwargs, **(generate_params | custom_generate_params))
         output: Dict[str, str] = {SPEAKER: AI, TEXT: response}
