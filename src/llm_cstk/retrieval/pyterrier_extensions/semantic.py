@@ -32,14 +32,12 @@ class SemanticPTRanker(_PTRanker, _Singleton):
             model: SemanticSearch,
             corpus: str,
             chunk_doc: bool = False,
-            chunk_size: Optional[int] = None,
-            chunk_stride: Optional[int] = None,
             ranking: bool = True,
             metadata: bool = False
     ) -> pt.Transformer:
         # Get model id
         transformer: str = (self.ranking_params if ranking else self.reranking_params)[TRANSFORMER_PARAM]
-        model_id: str = str(np.uint(hash(f'{model}_{transformer}_{corpus}_{chunk_doc}_{chunk_size}_{chunk_stride}')))
+        model_id: str = str(np.uint(hash(f'{model}_{transformer}_{corpus}_{chunk_doc}')))
         # Check whether the model is not already in cache
         data_df_path = None
         if model_id not in self._model_cache:
@@ -49,8 +47,8 @@ class SemanticPTRanker(_PTRanker, _Singleton):
                     data_df_path = self.get_corpus_path(corpus, chunk_doc=chunk_doc)
                 # Load embeddings index if required
                 ann_index_path = None
-                if self.index_exists(corpus, chunk_doc, chunk_size, chunk_stride, ranking=ranking) and ranking:
-                    ann_index_path = self.get_index_path(corpus, chunk_doc, chunk_size, chunk_stride, ranking=ranking)
+                if self.index_exists(corpus, chunk_doc, ranking=ranking) and ranking:
+                    ann_index_path = self.get_index_path(corpus, chunk_doc, ranking=ranking)
                 # Load pre-computed embeddings if required
                 pre_computed_embeddings_path = None
                 if self.pre_computed_embeddings_exists(corpus, chunk_doc, ranking=ranking) and (

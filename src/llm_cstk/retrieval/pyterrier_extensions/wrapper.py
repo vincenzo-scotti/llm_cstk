@@ -410,7 +410,7 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
             # Put together results
             results: List[Dict] = [
                 {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
-                for query_id, idxs, ordering, scores in zip(query_ids, idxs, scores)
+                for query_id, idxs, scores in zip(query_ids, idxs, scores)
                 for rank, ((docno, docid), score) in enumerate(zip(self._get_doc_ids(idxs), scores))
             ]
         # Store results in data frame

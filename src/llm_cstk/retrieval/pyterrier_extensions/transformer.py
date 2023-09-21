@@ -73,24 +73,24 @@ class PTTransformerFactory(_Singleton):
             snippet: bool = False
     ) -> Optional[pt.Transformer]:
         if scoring == 'semantic':
-            if self._semantic_ranker.index_exists(corpus, True, size, stride):
+            if self._semantic_ranker.index_exists(corpus, True) and size is None and stride is None:
                 return None
             else:
                 return pt.apply.generic(reset_text_col) >> pt.text.sliding(
                     text_attr=BODY if snippet else TEXT,
                     length=size,
                     stride=stride,
-                    title_attr=None if snippet else TITLE
+                    prepend_attr=None if snippet else TITLE
                 )
         elif scoring == 'lexical':
-            if self._lexical_ranker.index_exists(corpus, True, size, stride):
+            if self._lexical_ranker.index_exists(corpus, True) and size is None and stride is None:
                 return None
             else:
                 return pt.apply.generic(reset_text_col) >> pt.text.sliding(
                     text_attr=BODY if snippet else TEXT,
                     length=size,
                     stride=stride,
-                    title_attr=None if snippet else TITLE
+                    prepend_attr=None if snippet else TITLE
                 )
         else:
             raise ValueError(

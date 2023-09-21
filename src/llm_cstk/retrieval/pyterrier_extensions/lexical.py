@@ -23,13 +23,15 @@ class LexicalPTRanker(_PTRanker, _Singleton):
         # Check whether the model is not already in cache
         if model_id not in self._model_cache:
             # Load index
-            pt_indexer: pt.Indexer = pt.DFIndexer(self.get_index_dir_path(corpus, chunk_doc=chunk_doc))
-            pt_index_ref = pt.IndexRef.of(pt_indexer.path)
+            pt_index_ref = pt.IndexRef.of(self.get_index_dir_path(corpus, chunk_doc=chunk_doc))
             pt_index: pt.IndexRef = pt.IndexFactory.of(pt_index_ref)
             # Build retriever model
-            pt_transformer: pt.Transformer = pt.BatchRetrieve(
-                pt_index,  wmodel=LEXICAL_SEARCH_MAPPING[model], metadata=METADATA if metadata else None
-            )
+            if metadata:
+                pt_transformer: pt.Transformer = pt.BatchRetrieve(
+                    pt_index,  wmodel=LEXICAL_SEARCH_MAPPING[model], metadata=METADATA
+                )
+            else:
+                pt_transformer: pt.Transformer = pt.BatchRetrieve(pt_index, wmodel=LEXICAL_SEARCH_MAPPING[model])
             # Cache model
             self._model_cache[model_id] = pt_transformer
 
@@ -60,8 +62,7 @@ class LexicalPTRanker(_PTRanker, _Singleton):
         # Check whether the model is not already in cache
         if model_id not in self._scoring_model_cache:
             # Load index
-            pt_indexer: pt.Indexer = pt.DFIndexer(self.get_index_dir_path(corpus, chunk_doc=chunk_doc))
-            pt_index_ref = pt.IndexRef.of(pt_indexer.path)
+            pt_index_ref = pt.IndexRef.of(self.get_index_dir_path(corpus, chunk_doc=chunk_doc))
             pt_index: pt.IndexRef = pt.IndexFactory.of(pt_index_ref)
             # Build retriever model
             pt_transformer: pt.Transformer = pt.text.scorer(

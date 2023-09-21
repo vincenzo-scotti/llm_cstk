@@ -74,7 +74,7 @@ class DocRetriever(_Singleton):
         # Doc chunking (optional)
         doc_chunks_generator: Optional[pt.Transformer] = self._transformer_factory.doc_chunks_generator(
             corpus, doc_chunk_size, doc_chunk_stride, ranking
-        ) if chunk_doc else None
+        ) if chunk_doc and doc_chunk_size is not None and doc_chunk_stride is not None else None
         # Scoring
         doc_ranker: pt.Transformer = self._transformer_factory.doc_ranker(
             ranking,
@@ -187,7 +187,7 @@ class DocRetriever(_Singleton):
     @lru_cache
     def search(
             self,
-            query: Union[str, List[str]],
+            query: Union[str, Tuple[str]],
             corpus: str,
             ranking: Scoring = 'semantic',
             reranking: Optional[Scoring] = None,
@@ -201,6 +201,7 @@ class DocRetriever(_Singleton):
             query_score_aggregation: Optional[QueryAggregation] = None,
     ) -> pd.DataFrame:
         # Prepare query
+        query: Union[str, List[str]] = list(query) if isinstance(query, tuple) else query
         query: pd.DataFrame = self._prepare_query(query, chunk_query, query_chunk_size, query_chunk_stride)
         # Build search pipeline
         search_pipeline: pt.Transformer = self._build_search_pipeline(
@@ -222,7 +223,7 @@ class DocRetriever(_Singleton):
     def snippet(
             self,
             search_results: pd.DataFrame,
-            query: Union[str, List[str]],
+            query: Union[str, Tuple[str]],
             corpus: str,
             doc_chunk_size: int,
             doc_chunk_stride: int,
@@ -329,9 +330,10 @@ class DocRetriever(_Singleton):
         # Input sanity check
         assert not chunk_doc or doc_score_aggregation is not None
         assert isinstance(query, str) or query_score_aggregation is not None
+
         # Run long query on documents
         return self.search(
-            query,
+            tuple(query) if isinstance(query, list) else query,
             corpus,
             ranking=ranking,
             reranking=reranking,
@@ -361,7 +363,7 @@ class DocRetriever(_Singleton):
         assert isinstance(query, str) or query_score_aggregation is not None
         # Run long query on document chunks
         return self.search(
-            query,
+            tuple(query) if isinstance(query, list) else query,
             corpus,
             ranking=ranking,
             reranking=reranking,
@@ -414,7 +416,7 @@ class DocRetriever(_Singleton):
         #
         return self.snippet(
             search_results,
-            query,
+            tuple(query) if isinstance(query, list) else query,
             corpus,
             ranking=ranking,
             reranking=reranking,
