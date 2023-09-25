@@ -171,7 +171,7 @@ class PTTransformerFactory(_Singleton):
         if method == 'max':
             return pt.apply.generic(max_query_passage)
         elif method == 'mean':
-            return pt.apply.generic(min_query_passage)
+            return pt.apply.generic(mean_query_passage)
         else:
             raise ValueError(
                 f"Unknown query chunks aggregation method: \'{method}\', "

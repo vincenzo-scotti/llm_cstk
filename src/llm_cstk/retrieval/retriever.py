@@ -173,7 +173,7 @@ class DocRetriever(_Singleton):
             else:
                 query = [query]
         if len(query) > 1:
-            query = pd.DataFrame({QID: [f'q%p{i + 1}' for i, q in range(len(query))], QUERY: query})
+            query = pd.DataFrame({QID: [f'q%p{i + 1}' for i, q in enumerate(query)], QUERY: query})
         elif len(query) == 1:
             query = pd.DataFrame({QID: ['q'], QUERY: query})
         else:
