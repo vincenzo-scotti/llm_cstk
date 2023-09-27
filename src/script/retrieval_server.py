@@ -38,7 +38,7 @@ def snippet():
 
 
 @flask_app.post("/corpus")
-def add_corpus():
+def corpus():
     params = json.loads(request.data)['params']
     params['docs'] = pd.DataFrame(params['docs'])
     if ['chunked_docs'] in params:
@@ -47,7 +47,7 @@ def add_corpus():
 
 
 @flask_app.post("/score/query_doc_pair")
-def add_corpus():
+def score_query_doc_pair():
     params = json.loads(request.data)['params']
     results = doc_retriever.score_query_doc_pair(**params).to_json()
     response = jsonify(results)
@@ -149,7 +149,7 @@ def main(args: Namespace):
     logging.info("Retrieval API script started and configuration file loaded")
     global doc_retriever, flask_app
     # Initialise document retriever
-    doc_retriever = DocRetriever.load(configs['retriever'])
+    doc_retriever = DocRetriever.load(**configs['retriever'])
     # Run FLASK application
     flask_app.run(**configs['flask'])
     # Close script

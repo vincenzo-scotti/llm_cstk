@@ -122,8 +122,7 @@ class DocRetriever(_Singleton):
             ranking,
             corpus,
             chunk_doc=chunk_doc and doc_chunk_size is None and doc_chunk_stride is None,
-            reranking=reranking is not None,
-            as_scorer=doc_pre_ranker is not None
+            reranking=reranking is not None
         )
         # Reranking (optional)
         doc_reranker: Optional[pt.Transformer] = self._transformer_factory.doc_reranker(
@@ -543,7 +542,7 @@ class DocRetriever(_Singleton):
             doc_chunk_stride: Optional[int] = None,
             query_chunk_size: Optional[int] = None,
             query_chunk_stride: Optional[int] = None,
-            query_score_aggregation: Optional[QueryAggregation] = None,
+            query_score_aggregation: Optional[QueryAggregation] = 'mean',
             n_passages: int = 1
     ) -> pd.DataFrame:
         # Input sanity check

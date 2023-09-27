@@ -45,7 +45,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
         if model_id not in self._model_cache:
             if model == 'bienc':
                 # Load data if required
-                if (metadata or ranking) and corpus is not None:
+                if corpus is not None and (metadata or ranking):
                     data_df_path = self.get_corpus_path(corpus, chunk_doc=chunk_doc)
                 # Load embeddings index if required
                 ann_index_path = None
@@ -69,7 +69,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
                 )
             elif model == 'xenc':
                 # Load data if required
-                if (metadata or ranking) and corpus is not None:
+                if corpus is not None and (metadata or ranking):
                     data_df_path = self.get_corpus_path(corpus, chunk_doc=chunk_doc)
                 # Create PyTerrier transformer instance
                 pt_transformer = CrossEncoderPTTransformer(

@@ -68,7 +68,7 @@ def main(args: Namespace):
     logging.info("Generator API script started and configuration file loaded")
     global ai_assistant, flask_app
     # Initialise document retriever
-    ai_assistant = AIAssistant.load(configs['generator'])
+    ai_assistant = AIAssistant.load(**configs['generator'])
     # Run FLASK application
     flask_app.run(**configs['flask'])
     # Close script
