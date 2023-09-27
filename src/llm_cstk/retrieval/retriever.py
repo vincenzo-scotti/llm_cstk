@@ -121,7 +121,8 @@ class DocRetriever(_Singleton):
             reranking: Optional[Scoring],
             doc_chunk_size: Optional[int],
             doc_chunk_stride: Optional[int],
-            query_chunks_aggregation: Optional[QueryAggregation]
+            query_chunks_aggregation: Optional[QueryAggregation],
+            n_passages: int
     ) -> pt.Transformer:
         # Query cleaning (optional)
         scoring_query_cleaner: Optional[pt.Transformer] = self._transformer_factory.query_cleaner(
@@ -152,7 +153,7 @@ class DocRetriever(_Singleton):
         if query_chunks_aggregator is not None:
             pipeline >>= query_chunks_aggregator
 
-        return pt.text.snippets(pipeline, joinstr=SNIPPET_SEP)
+        return pt.text.snippets(pipeline, joinstr=SNIPPET_SEP, num_psgs=n_passages)
 
     def _prepare_query(
             self,
@@ -167,7 +168,7 @@ class DocRetriever(_Singleton):
             if chunk_query:
                 tokenised_query: List[str] = self._tokeniser(query)
                 query = [
-                    tokenised_query[idx*chunk_stride:idx*chunk_stride+chunk_size]
+                    ' '.join(tokenised_query[idx:idx+chunk_size])
                     for idx in range(0, len(tokenised_query), chunk_stride)
                 ]
             else:
@@ -222,7 +223,7 @@ class DocRetriever(_Singleton):
     @lru_cache
     def snippet(
             self,
-            search_results: pd.DataFrame,
+            search_results: Tuple,
             query: Union[str, Tuple[str]],
             corpus: str,
             doc_chunk_size: int,
@@ -233,12 +234,17 @@ class DocRetriever(_Singleton):
             query_chunk_size: Optional[int] = None,
             query_chunk_stride: Optional[int] = None,
             query_score_aggregation: Optional[QueryAggregation] = None,
+            n_passages: int = 1
     ) -> pd.DataFrame:
+        # Prepare search results
+        keys, values = search_results
+        search_results: pd.DataFrame = pd.DataFrame(values, columns=keys)
         # Prepare query
+        query: Union[str, List[str]] = list(query) if isinstance(query, tuple) else query
         query: pd.DataFrame = self._prepare_query(query, chunk_query, query_chunk_size, query_chunk_stride)
         #
         if QUERY in search_results.columns:
-            search_results = search_results.drop([QID, QUERY])
+            search_results = search_results.drop([QID, QUERY], axis=1)
         search_results = search_results.merge(query, how='cross')
         # Build snippet generation pipeline
         snippet_pipeline: pt.Transformer = self._build_snippet_pipeline(
@@ -248,7 +254,8 @@ class DocRetriever(_Singleton):
             reranking,
             doc_chunk_size,
             doc_chunk_stride,
-            query_score_aggregation
+            query_score_aggregation,
+            n_passages
         )
         # Run search
         results: pd.DataFrame = snippet_pipeline.transform(search_results)
@@ -319,7 +326,7 @@ class DocRetriever(_Singleton):
             corpus: str,
             ranking: Scoring = 'semantic',
             reranking: Optional[Scoring] = None,
-            chunk_doc: bool = False,
+            chunk: bool = False,
             doc_chunk_size: Optional[int] = None,
             doc_chunk_stride: Optional[int] = None,
             doc_score_aggregation: DocAggregation = 'max',
@@ -328,7 +335,7 @@ class DocRetriever(_Singleton):
             query_score_aggregation: QueryAggregation = 'mean'
     ):
         # Input sanity check
-        assert not chunk_doc or doc_score_aggregation is not None
+        assert not chunk or doc_score_aggregation is not None
         assert isinstance(query, str) or query_score_aggregation is not None
 
         # Run long query on documents
@@ -337,7 +344,7 @@ class DocRetriever(_Singleton):
             corpus,
             ranking=ranking,
             reranking=reranking,
-            chunk_doc=chunk_doc,
+            chunk_doc=chunk,
             doc_chunk_size=doc_chunk_size,
             doc_chunk_stride=doc_chunk_stride,
             doc_score_aggregation=doc_score_aggregation,
@@ -385,17 +392,19 @@ class DocRetriever(_Singleton):
             ranking: Scoring = 'semantic',
             reranking: Optional[Scoring] = None,
             doc_chunk_size: Optional[int] = None,
-            doc_chunk_stride: Optional[int] = None
+            doc_chunk_stride: Optional[int] = None,
+            n_passages: int = 1
     ) -> pd.DataFrame:
         #
         return self.snippet(
-            search_results,
+            (tuple(search_results.columns), tuple(tuple(row) for _, row in search_results.iterrows())),
             query,
             corpus,
             ranking=ranking,
             reranking=reranking,
             doc_chunk_size=doc_chunk_size,
-            doc_chunk_stride=doc_chunk_stride
+            doc_chunk_stride=doc_chunk_stride,
+            n_passages=n_passages
         )
 
     def generate_snippet_long_query(
@@ -403,19 +412,20 @@ class DocRetriever(_Singleton):
             search_results: pd.DataFrame,
             query: Union[str, List[str]],
             corpus: str,
-            doc_chunk_size: int,
-            doc_chunk_stride: int,
             ranking: Scoring = 'semantic',
             reranking: Optional[Scoring] = None,
+            doc_chunk_size: Optional[int] = None,
+            doc_chunk_stride: Optional[int] = None,
             query_chunk_size: Optional[int] = None,
             query_chunk_stride: Optional[int] = None,
-            query_score_aggregation: Optional[QueryAggregation] = None
+            query_score_aggregation: Optional[QueryAggregation] = None,
+            n_passages: int = 1
     ) -> pd.DataFrame:
         # Input sanity check
         assert not isinstance(query, str) or query_score_aggregation is not None
         #
         return self.snippet(
-            search_results,
+            (tuple(search_results.columns), tuple(tuple(row) for _, row in search_results.iterrows())),
             tuple(query) if isinstance(query, list) else query,
             corpus,
             ranking=ranking,
@@ -425,7 +435,8 @@ class DocRetriever(_Singleton):
             chunk_query=isinstance(query, str),
             query_chunk_size=query_chunk_size,
             query_chunk_stride=query_chunk_stride,
-            query_score_aggregation=query_score_aggregation
+            query_score_aggregation=query_score_aggregation,
+            n_passages=n_passages
         )
 
     def add_corpus(

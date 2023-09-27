@@ -57,9 +57,10 @@ class PTTransformerFactory(_Singleton):
             corpus: str
     ) -> Optional[pt.Transformer]:
         if self._lexical_ranker.index_exists(corpus, True):
-            return pt.text.get_text(
-                pt.IndexRef.of(pt.DFIndexer(self._lexical_ranker.get_index_path(corpus)).path), metadata=METADATA
-            )
+            pt_index_ref = pt.IndexRef.of(self._lexical_ranker.get_index_path(corpus))
+            pt_index: pt.IndexRef = pt.IndexFactory.of(pt_index_ref)
+
+            return pt.text.get_text(pt_index, metadata=[DOCNO] + METADATA)
         else:
             # TODO add manual document text loading
             raise NotImplementedError()
@@ -76,22 +77,32 @@ class PTTransformerFactory(_Singleton):
             if self._semantic_ranker.index_exists(corpus, True) and size is None and stride is None:
                 return None
             else:
-                return pt.apply.generic(reset_text_col) >> pt.text.sliding(
-                    text_attr=BODY if snippet else TEXT,
-                    length=size,
-                    stride=stride,
-                    prepend_attr=None if snippet else TITLE
-                )
+                if size is not None and stride is not None:
+                    return pt.apply.generic(reset_text_col) >> pt.text.sliding(
+                        text_attr=BODY if snippet else TEXT,
+                        length=size,
+                        stride=stride,
+                        prepend_attr=None if snippet else TITLE
+                    )
+                else:
+                    return pt.apply.generic(reset_text_col) >> pt.text.sliding(
+                        text_attr=BODY if snippet else TEXT, prepend_attr=None if snippet else TITLE
+                    )
         elif scoring == 'lexical':
             if self._lexical_ranker.index_exists(corpus, True) and size is None and stride is None:
                 return None
             else:
-                return pt.apply.generic(reset_text_col) >> pt.text.sliding(
-                    text_attr=BODY if snippet else TEXT,
-                    length=size,
-                    stride=stride,
-                    prepend_attr=None if snippet else TITLE
-                )
+                if size is not None and stride is not None:
+                    return pt.apply.generic(reset_text_col) >> pt.text.sliding(
+                        text_attr=BODY if snippet else TEXT,
+                        length=size,
+                        stride=stride,
+                        prepend_attr=None if snippet else TITLE
+                    )
+                else:
+                    return pt.apply.generic(reset_text_col) >> pt.text.sliding(
+                        text_attr=BODY if snippet else TEXT, prepend_attr=None if snippet else TITLE
+                    )
         else:
             raise ValueError(
                 f"Unknown scoring method for (re)ranking: \'{scoring}\', "
@@ -116,7 +127,9 @@ class PTTransformerFactory(_Singleton):
                 metadata=metadata
             )
         elif scoring == 'lexical':
-            return self._lexical_ranker.get_ranking_model(corpus, reranking=reranking, cutoff=cutoff, metadata=metadata)
+            return self._lexical_ranker.get_ranking_model(
+                corpus, chunk_doc=chunk_doc, reranking=reranking, cutoff=cutoff, metadata=metadata
+            )
         else:
             raise ValueError(
                 f"Unknown scoring method for ranking: \'{scoring}\', "

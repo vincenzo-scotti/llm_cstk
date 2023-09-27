@@ -26,12 +26,14 @@ class _SemanticPTTransformer(pt.Transformer):
             transformer: str,
             data_df_path: Optional[str] = None,
             metadata: bool = False,
-            device: Optional[torch.device] = None
+            device: Optional[torch.device] = None,
+            **semantic_model_kwargs
     ):
         self.transformer: str = transformer
         self.data_df_path: Optional[str] = data_df_path
         self.metadata: bool = metadata
         self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.semantic_model_kwargs: Dict = semantic_model_kwargs if semantic_model_kwargs is not None else dict()
 
         self._transformer_encoder: SentenceTransformer = self._load_transformer_encoder()
         self._data_df: Optional[pd.DataFrame] = self._load_data_df(
@@ -43,7 +45,9 @@ class _SemanticPTTransformer(pt.Transformer):
 
     def _load_transformer_encoder(self) -> SentenceTransformer:
         if self.transformer not in self._transformer_encoder_cache:
-            transformer_encoder = self.TRANSFORMER_TYPE(self.transformer, device=self.device.type)
+            transformer_encoder = self.TRANSFORMER_TYPE(
+                self.transformer, device=self.device.type, **self.semantic_model_kwargs
+            )
             self._transformer_encoder_cache[self.transformer] = transformer_encoder
 
         return self._transformer_encoder_cache[self.transformer]
@@ -136,7 +140,7 @@ class _SemanticPTTransformer(pt.Transformer):
         if self.metadata:
             # NOTE this should cause problems when using metadata on custom chunks of the documents,
             #  however such case should not happen
-            search_results = search_results.merge(self._data_df[METADATA], on=[DOCNO])
+            search_results = search_results.merge(self._data_df[[DOCNO] + METADATA], on=[DOCNO])
         # Add missing data from query
         query_output_columns = queries.columns[
             (queries.columns == QID) | (~queries.columns.isin(search_results.columns))
@@ -455,7 +459,6 @@ class BiEncoderPTTransformer(_SemanticPTTransformer):
 
 class CrossEncoderPTTransformer(_SemanticPTTransformer):
     TRANSFORMER_TYPE = CrossEncoder
-
     def _prepare_data_search(self, queries: pd.DataFrame) -> Tuple[List[str], List[str]]:
         # Get query ids
         query_ids = queries[QID].values.tolist()
@@ -498,8 +501,10 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         results: List[Dict] = []
         # Iterate over queries
         for query_id, query in zip(query_ids, queries):
-            scores = self._transformer_encoder.predict([[query, doc] for doc in docs])
-            ordering: np.ndarray = np.argsort(-scores, axis=1)
+            scores = self._transformer_encoder.predict([[query, doc] for doc in docs]).squeeze()
+            if len(scores.shape) > 1:  # TODO fixme
+                scores = scores[:, 0]
+            ordering: np.ndarray = np.argsort(-scores, axis=-1)
             # Add current results to accumulator
             results.extend([
                 {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
@@ -511,17 +516,19 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         return results
 
     def _semantic_rescore(
-            self, query_ids: List[str], queries: List[str], doc_ids: List[List[int]], documents: List[List[str]]
+            self, query_ids: List[str], queries: List[str], doc_ids: List[List[Tuple[str, str]]], documents: List[List[str]]
     ) -> pd.DataFrame:
         # Create accumulator for results
         results: List[Dict] = []
         # Compute similarity between query-document pairs
-        for query_id, query, idxs, docs in zip(query_ids, queries, doc_ids, documents):
+        for query_id, query, ids, docs in zip(query_ids, queries, doc_ids, documents):
             # Compute new scores and new ranks
-            scores: np.ndarray = self._transformer_encoder.predict([[query, doc] for doc in docs])
-            ordering: np.ndarray = np.argsort(-scores, axis=1)
+            scores: np.ndarray = self._transformer_encoder.predict([[query, doc] for doc in docs]).squeeze()
+            if len(scores.shape) > 1:  # TODO fixme
+                scores = scores[:, 0]
+            ordering: np.ndarray = np.argsort(-scores, axis=-1)
             # Add current results to accumulator
-            ids = np.array(self._get_doc_ids(idxs))
+            # ids = np.array(self._get_doc_ids(idxs))
             results.extend([
                 {QID: query_id, DOCNO: docno, DOCID: docid, RANK: rank, SCORE: score}
                 for rank, ((docno, docid), score) in enumerate(zip([ids[i] for i in ordering], scores[ordering]))

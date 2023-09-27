@@ -40,6 +40,8 @@ class SemanticPTRanker(_PTRanker, _Singleton):
         model_id: str = str(np.uint(hash(f'{model}_{transformer}_{corpus}_{chunk_doc}')))
         # Check whether the model is not already in cache
         data_df_path = None
+        if model_id in self._model_cache and self._model_cache[model_id].metadata != (metadata or ranking):
+            self._model_cache.pop(model_id)
         if model_id not in self._model_cache:
             if model == 'bienc':
                 # Load data if required
