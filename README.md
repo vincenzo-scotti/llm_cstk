@@ -71,7 +71,8 @@ Most of the functionalities are powered using an LLM.
 The code was initially developed to use the [Llama](https://arxiv.org/abs/2302.13971) and [Llama 2](https://arxiv.org/abs/2307.09288) models (and other derivative models) available through the [`llama-cpp-python` library](https://github.com/abetlen/llama-cpp-python/tree/main).
 
 The chat-related functionalities are:
-- **Response generation**: The chatbot is used to suggest possible responses in a conversation.
+- **Response generation**: The chatbot is used to have a plain conversation (LLM only).
+- **Response suggestion**: The chatbot is used to suggest possible responses in a conversation.
 - **Information extraction**: given a reference document, the user interacts with an LLM-based chatbot to extract relevant information.
 - **Knowledge-based question answering**: the user discusses with an LLM-based chatbot that can exploit external information from a knowledge base to answer.
 
@@ -93,9 +94,10 @@ We provide a generic function encapsulating all chat functionalities and some sp
 }
 ```
 
-#### Response generation
+#### Response suggestion
 
-...
+To get one or more response suggestions, use the `response_suggestion` function.
+This is useful to offer suggestions to the users.
 
 ##### Custom (L)LMs
 
@@ -103,7 +105,7 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 
 ```python
 >>> import requests
->>> url = 'http://127.0.0.1:8999/generate/candidate_responses/custom_lm'
+>>> url = 'http://127.0.0.1:8999/generate/response_suggestion/custom_lm'
 >>> req_data = {
 ...   'params': {
 ...     'n_samples': 3,  # `type: int`, the number of samples to generate
@@ -128,14 +130,52 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 
 ##### LLMs
 
-LLMs can be used to:
+Given a dialogue and a speaker (the identifier of the person that should respond) LLMs can be used to:
 - Elaborate on the responses suggested by the language models fine-tuned on domain-specific data to generate a suggested response.
 - Exploit external knowledge (previous chats, as in few-shot learning or reference documents) to generate a suggested response.
 - Use both previous approaches.
 
 ```python
 >>> import requests
->>> url = 'http://127.0.0.1:8999/generate/candidate_responses/llm'
+>>> url = 'http://127.0.0.1:8999/generate/response_suggestion/llm'
+>>> req_data = {
+...   'params': {
+...     'n_samples': 3,  # `type: int`, the number of samples to generate
+...     'speaker': 'AI',  # `type: str`, the identifier of the response's speaker
+...     'info': 'Python application crashing at startup',  # `type: Optional[str]`, a short description of the ongoing dialogue (optional)
+...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
+...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
+...       {'speaker': 'User', 'text': 'I am trying to start a Python application, but every time it says there are missing packages and crashes.'}
+...     ]
+...     'candidates': [  # `type: Optional[List[Dict[str, str]]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text, to help respond (optional)
+...       {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
+...       {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
+...       {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
+...     ]
+...     'relevant_documents': [  # `type: Optional[List[str]]`, a list with possibly useful document (passages), each document is a string, to help respond (optional)
+...       {'The definitive guide to rebooting a system suggests to (...)'},
+...       {'Python application common startup errors include (...)'},
+...       {'Restarting your computer for dummies: (...)'}
+...     ]
+...   }
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  'candidates': [  # `type: List[Dict[str, str]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text
+    {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
+    {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
+    {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
+  ]
+}
+```
+
+Moreover, LLMs can be used in *few-shot learning* mode, providing examples of other dialogues and corresponding responses.
+This is helpful to guide the LLM on unseen dialogues and tasks
+
+```python
+>>> import requests
+>>> url = 'http://127.0.0.1:8999/generate/response_suggestion/llm'
 >>> req_data = {
 ...   'params': {
 ...     'n_samples': 3,  # `type: int`, the number of samples to generate
@@ -170,6 +210,9 @@ LLMs can be used to:
 
 #### Information extraction
 
+To have a response for a dialogue analysing a given document, use the `info_estraction` function.
+This is useful to analyse an existing document and get some insights on its content.
+
 ```python
 >>> import requests
 >>> url = 'http://127.0.0.1:8999/generate/info_extraction'
@@ -190,6 +233,9 @@ LLMs can be used to:
 ```
 
 #### Knowledge-based question answering
+
+To explore the available knowledge base through a chat, use the `kb_qa` function.
+This is useful to get insights from the knowledge base  without querying it manually and then reading the document.
 
 ```python
 >>> import requests
@@ -365,6 +411,24 @@ This is useful for providing a preview when searching for documents similar to a
 ```python
 >>> import requests
 >>> url = 'http://127.0.0.1:8666/snippet/generate_long_query'
+>>> req_data = {
+...   ...
+... }
+>>> output = requests.post(url, data=req_data).json
+>>> print(output)
+{
+  ...
+}
+```
+
+#### Query-Document relevance scoring
+
+Query-document relevance scores are values used to rank the relevance of a document to a given query.
+This is useful to perform custom similarity/relevance computations rather than running an entire search.
+
+```python
+>>> import requests
+>>> url = 'http://127.0.0.1:8666/score_query_doc_pair'
 >>> req_data = {
 ...   ...
 ... }
