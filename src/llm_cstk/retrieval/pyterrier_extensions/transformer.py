@@ -116,20 +116,40 @@ class PTTransformerFactory(_Singleton):
             chunk_doc: bool = False,
             reranking: bool = False,
             cutoff: bool = True,
-            metadata: bool = False
+            metadata: bool = False,
+            preranking: bool = False,
+            as_scorer: bool = False
     ) -> pt.Transformer:
         if scoring == 'semantic':
-            return self._semantic_ranker.get_ranking_model(
-                corpus,
-                chunk_doc=chunk_doc,
-                reranking=reranking,
-                cutoff=cutoff,
-                metadata=metadata
-            )
+            if preranking:
+                return self._semantic_ranker.get_ranking_model(
+                    corpus,
+                    chunk_doc=chunk_doc,
+                    reranking=reranking,
+                    cutoff=cutoff,
+                    metadata=metadata
+                ) % self._semantic_ranker.reranking_cutoff
+            elif as_scorer:
+                self._semantic_ranker.get_scoring_model(corpus=corpus)
+            else:
+                return self._semantic_ranker.get_ranking_model(
+                    corpus,
+                    chunk_doc=chunk_doc,
+                    reranking=reranking,
+                    cutoff=cutoff,
+                    metadata=metadata
+                )
         elif scoring == 'lexical':
-            return self._lexical_ranker.get_ranking_model(
-                corpus, chunk_doc=chunk_doc, reranking=reranking, cutoff=cutoff, metadata=metadata
-            )
+            if preranking:
+                return self._lexical_ranker.get_ranking_model(
+                    corpus, chunk_doc=chunk_doc, reranking=reranking, cutoff=cutoff, metadata=True
+                ) % self._lexical_ranker.reranking_cutoff
+            elif as_scorer:
+                return self._lexical_ranker.get_scoring_model(corpus, chunk_doc=chunk_doc)
+            else:
+                return self._lexical_ranker.get_ranking_model(
+                    corpus, chunk_doc=chunk_doc, reranking=reranking, cutoff=cutoff, metadata=metadata
+                )
         else:
             raise ValueError(
                 f"Unknown scoring method for ranking: \'{scoring}\', "
@@ -140,12 +160,21 @@ class PTTransformerFactory(_Singleton):
             self,
             scoring: Scoring,
             corpus: str,
-            chunk_doc: bool = False
+            chunk_doc: bool = False,
+            as_scorer: bool = True
     ) -> pt.Transformer:
         if scoring == 'semantic':
-            return self._semantic_ranker.get_reranking_model(corpus, chunk_doc=chunk_doc)
+            if as_scorer:
+                return self._semantic_ranker.get_scoring_model(corpus=corpus, ranking=False)
+            else:
+                return self._semantic_ranker.get_reranking_model(corpus, chunk_doc=chunk_doc)
         elif scoring == 'lexical':
-            return self._lexical_ranker.get_reranking_model(corpus, chunk_doc=chunk_doc)
+            if as_scorer:
+                return self._lexical_ranker.get_scoring_model(
+                    corpus, chunk_doc=chunk_doc, ranking=False
+                ) >> pt.apply.generic(lambda df: df.drop(METADATA, axis='columns'))
+            else:
+                return self._lexical_ranker.get_reranking_model(corpus, chunk_doc=chunk_doc)
         else:
             raise ValueError(
                 f"Unknown scoring method for reranking: \'{scoring}\', "
@@ -155,12 +184,12 @@ class PTTransformerFactory(_Singleton):
     def doc_scorer(
             self,
             scoring: Scoring,
-            corpus: str,
+            corpus: Optional[str] = None,
             ranking: bool = True,
             txt_col: str = TEXT,
     ) -> pt.Transformer:
         if scoring == 'semantic':
-            return self._semantic_ranker.get_scoring_model(corpus, txt_col=txt_col, ranking=ranking)
+            return self._semantic_ranker.get_scoring_model(corpus=corpus, txt_col=txt_col, ranking=ranking)
         elif scoring == 'lexical':
             return self._lexical_ranker.get_scoring_model(corpus, txt_col=txt_col, ranking=ranking)
         else:

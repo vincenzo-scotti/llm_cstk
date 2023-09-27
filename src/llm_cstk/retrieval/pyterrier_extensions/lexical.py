@@ -34,7 +34,7 @@ class LexicalPTRanker(_PTRanker, _Singleton):
                 )
             else:
                 pt_transformer: pt.Transformer = pt.BatchRetrieve(
-                    pt_index, wmodel=LEXICAL_SEARCH_MAPPING[model], metadata=[DOCNO]
+                    pt_index, wmodel=LEXICAL_SEARCH_MAPPING[model]
                 )
             # Cache model
             self._model_cache[model_id] = pt_transformer

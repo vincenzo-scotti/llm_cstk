@@ -51,6 +51,48 @@ class DocRetriever(_Singleton):
                     kwargs[f'{submodule}__{k}'] = v
         return super().load(*args, **kwargs)
 
+    def _build_scoring_pipeline(
+            self,
+            corpus: str,
+            ranking: Scoring,
+            reranking: Optional[Scoring],
+            chunk_doc: bool,
+            doc_chunk_size: Optional[int],
+            doc_chunk_stride: Optional[int],
+            doc_chunks_aggregation: Optional[DocAggregation],
+            query_chunks_aggregation: Optional[QueryAggregation],
+    ):
+        # Query cleaning (optional)
+        query_cleaner: Optional[pt.Transformer] = self._transformer_factory.query_cleaner(ranking)
+        # Doc chunking (optional)
+        doc_chunks_generator: Optional[pt.Transformer] = self._transformer_factory.doc_chunks_generator(
+            corpus, doc_chunk_size, doc_chunk_stride, ranking
+        ) if chunk_doc and doc_chunk_size is not None and doc_chunk_stride is not None else None
+        # Scorer
+        doc_scorer: pt.Transformer = self._transformer_factory.doc_scorer(
+            ranking if reranking is None else reranking, corpus=corpus, ranking=reranking is None
+        )
+        # Doc chunks aggregation (optional)
+        doc_chunks_aggregator: Optional[pt.Transformer] = self._transformer_factory.doc_chunks_aggregator(
+            doc_chunks_aggregation
+        ) if chunk_doc and doc_chunks_aggregation is not None else None
+        # Query parts aggregation (optional)
+        query_chunks_aggregator: Optional[pt.Transformer] = self._transformer_factory.query_chunks_aggregator(
+            query_chunks_aggregation
+        ) if query_chunks_aggregation is not None else None
+        # Compose pipeline
+        pipeline: pt.Transformer = doc_scorer
+        if doc_chunks_generator is not None:
+            pipeline = doc_chunks_generator >> pipeline
+        if query_cleaner is not None:
+            pipeline = query_cleaner >> pipeline
+        if doc_chunks_aggregator is not None:
+            pipeline >>= doc_chunks_aggregator
+        if query_chunks_aggregator is not None:
+            pipeline >>= query_chunks_aggregator
+
+        return pipeline
+
     def _build_search_pipeline(
             self,
             corpus: str,
@@ -69,7 +111,7 @@ class DocRetriever(_Singleton):
         ) if reranking is not None else None
         # Doc pre-ranking (optional)
         doc_pre_ranker: pt.Transformer = self._transformer_factory.doc_ranker(
-            'lexical', corpus, metadata=True  # ranking, corpus, metadata=True  # TODO find better solution like averaging doc embeddings when registering them
+            'lexical', corpus, metadata=True, preranking=True  # ranking, corpus, metadata=True  # TODO find better solution like averaging doc embeddings when registering them
         ) if chunk_doc and doc_chunk_size is not None and doc_chunk_stride is not None else None
         # Doc chunking (optional)
         doc_chunks_generator: Optional[pt.Transformer] = self._transformer_factory.doc_chunks_generator(
@@ -80,7 +122,8 @@ class DocRetriever(_Singleton):
             ranking,
             corpus,
             chunk_doc=chunk_doc and doc_chunk_size is None and doc_chunk_stride is None,
-            reranking=reranking is not None
+            reranking=reranking is not None,
+            as_scorer=doc_pre_ranker is not None
         )
         # Reranking (optional)
         doc_reranker: Optional[pt.Transformer] = self._transformer_factory.doc_reranker(
@@ -186,6 +229,53 @@ class DocRetriever(_Singleton):
         return self.search(*args, **kwargs)
 
     @lru_cache
+    def score(
+            self,
+            query: Tuple[str],
+            doc: Tuple[str],
+            corpus: Optional[str] = None,
+            scoring: Scoring = 'semantic',
+            rescoring: Optional[Scoring] = None,
+            chunk_doc: bool = False,
+            doc_chunk_size: Optional[int] = None,
+            doc_chunk_stride: Optional[int] = None,
+            doc_score_aggregation: Optional[DocAggregation] = None,
+            chunk_query: bool = False,
+            query_chunk_size: Optional[int] = None,
+            query_chunk_stride: Optional[int] = None,
+            query_score_aggregation: Optional[QueryAggregation] = None
+    ):
+        query: List[str] = list(query)
+        doc: List[str] = list(doc)
+        # Prepare query
+        if chunk_query:
+            tokenised_query: List[List[str]] = [self._tokeniser(q) for q in query]
+            query = [
+                ' '.join(tokenised_q[idx:idx + query_chunk_size])
+                for tokenised_q in tokenised_query
+                for idx in range(0, len(tokenised_q), query_chunk_stride)
+            ]
+            doc = sum(([d] * len(tokenised_q) for tokenised_q, d in zip(tokenised_query, doc)), start=list())
+        # Prepare data
+        data_df: pd.DataFrame = pd.DataFrame(zip(query, doc), columns=[QUERY, TEXT])
+        # Build scoring pipeline
+        scoring_pipeline: pt.Transformer = self._build_scoring_pipeline(
+            corpus,
+            scoring,
+            rescoring,
+            chunk_doc,
+            doc_chunk_size,
+            doc_chunk_stride,
+            doc_score_aggregation,
+            query_score_aggregation
+        )
+        # Run search
+        results: pd.DataFrame = scoring_pipeline.transform(data_df)
+
+        return results
+
+
+    @lru_cache
     def search(
             self,
             query: Union[str, Tuple[str]],
@@ -273,6 +363,41 @@ class DocRetriever(_Singleton):
             overwrite: bool = False
     ):
         raise NotImplementedError()
+
+    def score_query_doc_pair(
+            self,
+            query: Union[str, List[str]],
+            doc: Union[str, List[str]],
+            corpus: Optional[str] = None,
+            scoring: Scoring = 'semantic',
+            rescoring: Optional[Scoring] = None,
+            chunk_doc: bool = False,
+            doc_chunk_size: Optional[int] = None,
+            doc_chunk_stride: Optional[int] = None,
+            doc_score_aggregation: Optional[DocAggregation] = 'max',
+            chunk_query: bool = False,
+            query_chunk_size: Optional[int] = None,
+            query_chunk_stride: Optional[int] = None,
+            query_score_aggregation: Optional[QueryAggregation] = 'mean'
+    ):
+        assert not chunk_doc or doc_score_aggregation is not None
+        assert not chunk_query or query_score_aggregation is not None
+
+        return self.score(
+            tuple(query) if isinstance(query, list) else (query,),
+            tuple(doc) if isinstance(doc, list) else (doc,),
+            corpus=corpus,
+            scoring=scoring,
+            rescoring=rescoring,
+            chunk_doc=chunk_doc,
+            doc_chunk_size=doc_chunk_size,
+            doc_chunk_stride=doc_chunk_stride,
+            doc_score_aggregation=doc_score_aggregation,
+            chunk_query=chunk_query,
+            query_chunk_size=query_chunk_size,
+            query_chunk_stride=query_chunk_stride,
+            query_score_aggregation=query_score_aggregation
+        )
 
     def search_doc(
             self,

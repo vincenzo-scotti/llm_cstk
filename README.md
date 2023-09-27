@@ -428,7 +428,7 @@ This is useful to perform custom similarity/relevance computations rather than r
 
 ```python
 >>> import requests
->>> url = 'http://127.0.0.1:8666/score_query_doc_pair'
+>>> url = 'http://127.0.0.1:8666/score/query_doc_pair'
 >>> req_data = {
 ...   ...
 ... }

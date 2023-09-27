@@ -30,7 +30,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
     def _get_model(
             self,
             model: SemanticSearch,
-            corpus: str,
+            corpus: Optional[str] = None,
             chunk_doc: bool = False,
             ranking: bool = True,
             metadata: bool = False
@@ -45,15 +45,15 @@ class SemanticPTRanker(_PTRanker, _Singleton):
         if model_id not in self._model_cache:
             if model == 'bienc':
                 # Load data if required
-                if metadata or ranking:
+                if (metadata or ranking) and corpus is not None:
                     data_df_path = self.get_corpus_path(corpus, chunk_doc=chunk_doc)
                 # Load embeddings index if required
                 ann_index_path = None
-                if self.index_exists(corpus, chunk_doc, ranking=ranking) and ranking:
+                if corpus is not None and (self.index_exists(corpus, chunk_doc, ranking=ranking) and ranking):
                     ann_index_path = self.get_index_path(corpus, chunk_doc, ranking=ranking)
                 # Load pre-computed embeddings if required
                 pre_computed_embeddings_path = None
-                if self.pre_computed_embeddings_exists(corpus, chunk_doc, ranking=ranking) and (
+                if corpus is not None and self.pre_computed_embeddings_exists(corpus, chunk_doc, ranking=ranking) and (
                         not ranking or ann_index_path is None
                 ):
                     pre_computed_embeddings_path = self.get_pre_computed_embeddings_path(
@@ -69,7 +69,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
                 )
             elif model == 'xenc':
                 # Load data if required
-                if metadata or ranking:
+                if (metadata or ranking) and corpus is not None:
                     data_df_path = self.get_corpus_path(corpus, chunk_doc=chunk_doc)
                 # Create PyTerrier transformer instance
                 pt_transformer = CrossEncoderPTTransformer(
@@ -106,7 +106,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
     def get_reranking_model(self, corpus: str, chunk_doc: bool = False, metadata: bool = False) -> pt.Transformer:
         return self._get_model(self.reranking_model, corpus, chunk_doc, ranking=False, metadata=metadata)
 
-    def get_scoring_model(self, corpus: str, txt_col: str = TEXT, ranking: bool = True):
+    def get_scoring_model(self, corpus: Optional[str] = None, txt_col: str = TEXT, ranking: bool = True):
         # Get model id
         model = self.ranking_model if ranking else self.reranking_model
         transformer: str = (self.ranking_params if ranking else self.reranking_params)[TRANSFORMER_PARAM]
@@ -115,7 +115,7 @@ class SemanticPTRanker(_PTRanker, _Singleton):
         if model_id not in self._scoring_model_cache:
             # Build scoring model
             pt_transformer: pt.Transformer = self._get_model(
-                model, corpus, ranking=ranking
+                model, corpus=corpus, ranking=ranking
             ).to_semantic_scorer(txt_col=txt_col)
             # Cache model
             self._scoring_model_cache[model_id] = pt_transformer

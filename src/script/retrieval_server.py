@@ -46,6 +46,15 @@ def add_corpus():
     doc_retriever.corpus(**params).to_json()
 
 
+@flask_app.post("/score/query_doc_pair")
+def add_corpus():
+    params = json.loads(request.data)['params']
+    results = doc_retriever.score_query_doc_pair(**params).to_json()
+    response = jsonify(results)
+
+    return response
+
+
 @flask_app.post("/search/doc")
 def search_doc():
     params = json.loads(request.data)['params']

@@ -27,6 +27,7 @@ class _SemanticPTTransformer(pt.Transformer):
             data_df_path: Optional[str] = None,
             metadata: bool = False,
             device: Optional[torch.device] = None,
+            batch_size: int = 32,
             **semantic_model_kwargs
     ):
         self.transformer: str = transformer
@@ -34,6 +35,7 @@ class _SemanticPTTransformer(pt.Transformer):
         self.metadata: bool = metadata
         self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.semantic_model_kwargs: Dict = semantic_model_kwargs if semantic_model_kwargs is not None else dict()
+        self.batch_size: int = batch_size
 
         self._transformer_encoder: SentenceTransformer = self._load_transformer_encoder()
         self._data_df: Optional[pd.DataFrame] = self._load_data_df(
@@ -137,10 +139,15 @@ class _SemanticPTTransformer(pt.Transformer):
         # Run queries
         search_results: pd.DataFrame = self._search(input_results, *search_input)
         # Add optional metadata
-        if self.metadata:
+        if self.metadata and search_results[DOCNO].isin(self._data_df[DOCNO]).all():
             # NOTE this should cause problems when using metadata on custom chunks of the documents,
             #  however such case should not happen
             search_results = search_results.merge(self._data_df[[DOCNO] + METADATA], on=[DOCNO])
+        elif self.metadata and input_results is not None:
+            input_results_output_columns = input_results.columns[
+                (input_results.columns == DOCNO) | (~input_results.columns.isin(search_results.columns))
+            ]
+            search_results = search_results.merge(input_results[input_results_output_columns], on=[DOCNO])
         # Add missing data from query
         query_output_columns = queries.columns[
             (queries.columns == QID) | (~queries.columns.isin(search_results.columns))
@@ -154,7 +161,7 @@ class _SemanticPTTransformer(pt.Transformer):
 
     def to_semantic_scorer(self, **kwargs) -> pt.Transformer:
         # Create re-scorer
-        scorer = pt.apply.doc_score(partial(self._encoder_apply, **kwargs))
+        scorer = pt.apply.doc_score(partial(self._encoder_apply, **kwargs), batch_size=self.batch_size)
 
         return scorer
 
@@ -544,6 +551,8 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         # Docs
         docs = df[txt_col].values
         # Compute score
-        scores = self._transformer_encoder.predict(list([q, d] for q, d in zip(queries, docs)))
+        scores = self._transformer_encoder.predict(list([q, d] for q, d in zip(queries, docs))).squeeze()
+        if len(scores.shape) > 1:  # TODO fixme
+            scores = scores[:, 0]
 
         return scores
