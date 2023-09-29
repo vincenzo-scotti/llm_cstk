@@ -36,7 +36,7 @@ KB_QA: str = 'kb_qa'
 DIALOGUE: str = 'dialogue'
 CANDIDATES: str = 'candidates'
 RELEVANT_DOCS: str = 'docs'
-RELEVANT_DOC: str = 'docs'
+RELEVANT_DOC: str = 'doc'
 
 MODEL: str = 'model'
 CONFIGS: str = 'configs'

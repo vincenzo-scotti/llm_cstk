@@ -210,11 +210,11 @@ class AIAssistant(_Singleton):
             document: str,
             custom_generate_params: Optional[Dict] = None
     ) -> Dict[str, str]:
+        template = self._llm.templates.get(INFO_EXTRACTION)[RELEVANT_DOC]
+        utterances.insert(0, {SPEAKER: SYSTEM, TEXT: template['format'].format(document)})
         instructions = self._llm.instructions.get(INFO_EXTRACTION)
         if instructions is not None:
             utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
-        template = self._llm.templates.get(INFO_EXTRACTION)[RELEVANT_DOC]
-        utterances.append({SPEAKER: SYSTEM, TEXT: template['format'].format(document)})
 
         return self.generate_llm(utterances, custom_generate_params=custom_generate_params)
 
