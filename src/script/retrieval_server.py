@@ -67,7 +67,7 @@ def search_doc():
 @flask_app.post("/search/doc_chunk")
 def search_doc_chunk():
     params = json.loads(request.data)['params']
-    results = doc_retriever.search_doc(**params).to_json()
+    results = doc_retriever.search_doc_chunk(**params).to_json()
     response = jsonify(results)
 
     return response
