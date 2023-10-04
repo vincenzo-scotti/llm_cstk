@@ -510,7 +510,7 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         for query_id, query in zip(query_ids, queries):
             scores = self._transformer_encoder.predict([[query, doc] for doc in docs]).squeeze()
             if len(scores.shape) > 1:  # TODO fixme
-                scores = scores[:, 0]
+                scores = scores[:, 1]
             ordering: np.ndarray = np.argsort(-scores, axis=-1)
             # Add current results to accumulator
             results.extend([
@@ -532,7 +532,7 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
             # Compute new scores and new ranks
             scores: np.ndarray = self._transformer_encoder.predict([[query, doc] for doc in docs]).squeeze()
             if len(scores.shape) > 1:  # TODO fixme
-                scores = scores[:, 0]
+                scores = scores[:, 1]
             ordering: np.ndarray = np.argsort(-scores, axis=-1)
             # Add current results to accumulator
             # ids = np.array(self._get_doc_ids(idxs))
