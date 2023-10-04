@@ -83,11 +83,12 @@ We provide a generic function encapsulating all chat functionalities and some sp
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8999/generate'
 >>> req_data = {
 ...   
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -105,6 +106,7 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8999/generate/response_suggestion/custom_lm'
 >>> req_data = {
 ...   'params': {
@@ -117,7 +119,7 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 ...     ]
 ...   }
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   'candidates': [  # `type: List[Dict[str, str]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text
@@ -137,6 +139,7 @@ Given a dialogue and a speaker (the identifier of the person that should respond
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8999/generate/response_suggestion/llm'
 >>> req_data = {
 ...   'params': {
@@ -146,12 +149,12 @@ Given a dialogue and a speaker (the identifier of the person that should respond
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
 ...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
 ...       {'speaker': 'User', 'text': 'I am trying to start a Python application, but every time it says there are missing packages and crashes.'}
-...     ]
+...     ],
 ...     'candidates': [  # `type: Optional[List[Dict[str, str]]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text, to help respond (optional)
 ...       {'speaker': 'AI', 'text': 'Have you tried turning the computer off and on again?'},
 ...       {'speaker': 'AI', 'text': 'Have you tried rebooting the system?'},
 ...       {'speaker': 'AI', 'text': 'Are you using the correct Python environment?'}
-...     ]
+...     ],
 ...     'relevant_documents': [  # `type: Optional[List[str]]`, a list with possibly useful document (passages), each document is a string, to help respond (optional)
 ...       {'The definitive guide to rebooting a system suggests to (...)'},
 ...       {'Python application common startup errors include (...)'},
@@ -159,7 +162,7 @@ Given a dialogue and a speaker (the identifier of the person that should respond
 ...     ]
 ...   }
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   'candidates': [  # `type: List[Dict[str, str]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text
@@ -175,6 +178,7 @@ This is helpful to guide the LLM on unseen dialogues and tasks
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8999/generate/response_suggestion/llm'
 >>> req_data = {
 ...   'params': {
@@ -197,7 +201,7 @@ This is helpful to guide the LLM on unseen dialogues and tasks
 ...     ]
 ...   }
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   'candidates': [  # `type: List[Dict[str, str]]`, a list with candidate responses, each response is a dictionary with speaker identifier and generated text
@@ -215,20 +219,21 @@ This is useful to analyse an existing document and get some insights on its cont
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8999/generate/info_extraction'
 >>> req_data = {
 ...   'params': {
 ...     'document': 'GPU installation guide ...',  # `type: str`, the text of the document to analyse
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
-...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
-...       {'speaker': 'User', 'text': 'What is the document about?'}
+...       {'speaker': 'assistant', 'text': 'Hello, how may I assist you?'},
+...       {'speaker': 'user', 'text': 'What is the document about?'}
 ...     ]
 ...   }
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
-  'response': {'speaker': 'AI', 'text': 'The document contains instructions to install a GPU on a computer.'}
+  'response': {'speaker': 'assistant', 'text': 'The document contains instructions to install a GPU on a computer.'}
 }
 ```
 
@@ -239,28 +244,26 @@ This is useful to get insights from the knowledge base  without querying it manu
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8999/generate/kb_qa'
 >>> req_data = {
 ...   'params': {
 ...     'relevant_documents': [  # `type: List[str]`, a list with possibly useful document (passages), each document is a string, to help respond
-...       '',
-...       '',
-...       ''
+...       'Use the `sudo` keyword to run a command as administrator.',
+...       '`sudo` allows to run commands as system admin.'
 ...     ]
 ...     'utterances': [  # `type: List[Dict[str, str]]`, a list of dialogue utterances up to now, each utterance is a dictionary with speaker identifier and generated text
-...       {'speaker': 'AI', 'text': 'Hello, how may I assist you?'},
-...       {'speaker': 'User', 'text': 'Who is stronger? Ken or Son Goku?'}
+...       {'speaker': 'assistant', 'text': 'Hello, how may I assist you?'},
+...       {'speaker': 'user', 'text': 'How can I run a command as admin?'}
 ...     ]
 ...   }
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
-  'response': {'speaker': 'AI', 'text': 'Son Goku, of course.'}
+  'response': {'speaker': 'assistant', 'text': 'Type `sudo` before the command to run'}
 }
 ```
-
-
 
 ### Search
 
@@ -278,11 +281,12 @@ We provide a generic function encapsulating all retrieval functionalities and so
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/search'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -299,11 +303,12 @@ This is useful for building a search engine.
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/search/doc'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -317,11 +322,12 @@ This is useful for the knowledge-based question-answering chat function, which u
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/search/doc_chunk'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -338,11 +344,12 @@ This is useful for searching documents similar to a reference one.
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/search/doc_long_query'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -356,11 +363,12 @@ This is useful for searching documents similar to a reference one and using the 
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/search/doc_chunk_long_query'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -374,11 +382,12 @@ We provide a generic function encapsulating all snippet generation functionaliti
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/snippet'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -392,11 +401,12 @@ This is useful for providing a preview in a search engine.
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/snippet/generate'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -410,11 +420,12 @@ This is useful for providing a preview when searching for documents similar to a
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/snippet/generate_long_query'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -428,11 +439,12 @@ This is useful to perform custom similarity/relevance computations rather than r
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/score/query_doc_pair'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -443,11 +455,12 @@ This is useful to perform custom similarity/relevance computations rather than r
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/corpus'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -458,11 +471,12 @@ This is useful to perform custom similarity/relevance computations rather than r
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/corpus/add'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -473,11 +487,12 @@ This is useful to perform custom similarity/relevance computations rather than r
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/corpus/add_large'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -488,11 +503,12 @@ This is useful to perform custom similarity/relevance computations rather than r
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/corpus/index'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
@@ -503,11 +519,12 @@ This is useful to perform custom similarity/relevance computations rather than r
 
 ```python
 >>> import requests
+>>> import json
 >>> url = 'http://127.0.0.1:8666/corpus/index_large'
 >>> req_data = {
 ...   ...
 ... }
->>> output = requests.post(url, data=req_data).json
+>>> output = requests.post(url, data=json.dumps(req_data)).json
 >>> print(output)
 {
   ...
