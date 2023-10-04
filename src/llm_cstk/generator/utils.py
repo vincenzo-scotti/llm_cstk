@@ -7,7 +7,7 @@ from llm_cstk.utils.common import _Singleton
 
 LM: TypeAlias = Literal['llm', 'custom_lm']
 CustomLM: TypeAlias = Union[DialogueLM]
-Task: TypeAlias = Literal['candidates', 'info_extraction', 'kb_qa']
+Task: TypeAlias = Literal['response_suggestion', 'info_extraction', 'kb_qa']
 
 # Constants
 

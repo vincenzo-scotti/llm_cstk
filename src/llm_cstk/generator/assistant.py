@@ -216,7 +216,7 @@ class AIAssistant(_Singleton):
         if instructions is not None:
             utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
 
-        return self.generate_llm(utterances, custom_generate_params=custom_generate_params)
+        return self.generate_llm(utterances, task=INFO_EXTRACTION, custom_generate_params=custom_generate_params)
 
     def kb_qa(
             self,
@@ -235,4 +235,4 @@ class AIAssistant(_Singleton):
                       f"{BLOCK_SEP.join(template['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1))}"
             })
 
-        return self.generate_llm(utterances, custom_generate_params=custom_generate_params)
+        return self.generate_llm(utterances, task=KB_QA, custom_generate_params=custom_generate_params)
