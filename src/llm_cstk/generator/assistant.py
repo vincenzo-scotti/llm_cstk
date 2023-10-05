@@ -222,12 +222,19 @@ class AIAssistant(_Singleton):
             self,
             utterances: List[Dict[str, str]],
             relevant_documents: Optional[List[str]] = None,
+            ask_query: bool = False,
             custom_generate_params: Optional[Dict] = None
     ) -> Dict[str, str]:
         instructions = self._llm.instructions.get(KB_QA)
         if instructions is not None:
             utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
-        if relevant_documents is not None and len(relevant_documents) > 0:
+        if ask_query:
+            template = self._llm.templates.get(KB_QA)[QUERY]
+            utterances.append({
+                SPEAKER: SYSTEM,
+                TEXT: template['message']
+            })
+        elif relevant_documents is not None and len(relevant_documents) > 0:
             template = self._llm.templates.get(KB_QA)[RELEVANT_DOCS]
             utterances.append({
                 SPEAKER: SYSTEM,
