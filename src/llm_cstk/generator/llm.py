@@ -29,7 +29,7 @@ class LLMAPI(_Singleton):
     @staticmethod
     def _decode_completions_output(http_response: requests.Response) -> Optional[str]:
         if http_response.status_code == 200:
-            return http_response.json()[CHOICES][0][MESSAGE][CONTENT]
+            return http_response.json()[CHOICES][0][MESSAGE][CONTENT].strip()
         else:
             return None
 
