@@ -147,6 +147,7 @@ class AIAssistant(_Singleton):
             examples: Optional[List[Dict[str, Union[str, List[str]]]]] = None,
             candidates: Optional[List[Dict[str, str]]] = None,
             relevant_documents: Optional[List[str]] = None,
+            ask_query: bool = False,
             custom_generate_params: Optional[Dict] = None,
             n_samples: int = 1
     ) -> List[Dict[str, str]]:
@@ -154,13 +155,23 @@ class AIAssistant(_Singleton):
         dialogue = list()
         instructions = self._llm.instructions.get(RESPONSE_SUGGESTION)
         if instructions is not None:
-            utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
+            dialogue.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
         if examples is not None:
             for example in examples:
                 dialogue += self._build_message_pair_response_suggestion_llm(example)
         dialogue.append(self._build_user_message_response_suggestion_llm(
-            utterances, speaker, info=info, candidates=candidates, relevant_documents=relevant_documents
+            utterances,
+            speaker,
+            info=info,
+            candidates=candidates if not ask_query else None,
+            relevant_documents=relevant_documents if not ask_query else None
         ))
+        if ask_query:
+            template = self._llm.templates.get(KB_QA)[QUERY]
+            utterances.append({
+                SPEAKER: SYSTEM,
+                TEXT: template['message']
+            })
 
         return [
             self.generate_llm(dialogue, task=RESPONSE_SUGGESTION, custom_generate_params=custom_generate_params)
