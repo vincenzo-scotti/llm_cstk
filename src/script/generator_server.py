@@ -4,7 +4,7 @@ import logging
 
 from typing import Dict, Optional
 
-from submodules.llm_cstk.src.llm_cstk.generator import AIAssistant
+from llm_cstk.generator import AIAssistant
 from llm_cstk.utils.scripting import init_rest_server_environment
 
 import json
