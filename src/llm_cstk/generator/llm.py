@@ -44,11 +44,6 @@ class LLMAPI(_Singleton):
             return None
 
     def completion(self, text: str, **generate_params) -> str:
-        print("#" * 16)
-        print(text)
-        print("#" * 16)
-        print(generate_params)
-        print("#" * 16)
         request_url: str = urljoin(self.url, COMPLETIONS_PATH)
         request_data: str = json.dumps(self._prepare_completions_input(text, **generate_params))
         http_response: requests.Response = requests.post(request_url, headers=HEADERS, data=request_data)
