@@ -218,6 +218,22 @@ class AIAssistant(_Singleton):
                 f"Unknown model type: `{model}`, accepted values are {', '.join(f'{repr(t)}' for t in LM)}"
             )
 
+    def _prepare_dialogue_assistant_chat_llm(self, utterances: List[Dict[str, str]], task: Task) -> str:
+        #
+        template = self._llm.templates[task][UTTERANCES]
+        dialogue: List[str] = list()
+        #
+        if INFO_EXTRACTION in self._llm.instructions:
+            template_ = self._llm.templates[task][INSTRUCTIONS]
+            dialogue.append(template_['format'].format(utterances.pop(0)[TEXT]))
+        #
+        for utterance in utterances:
+            dialogue.append(template['formats'][utterance[SPEAKER]].format(utterance[TEXT]))
+        #
+        dialogue.append(template['suffix'])
+
+        return template['sep'].join(dialogue)
+
     def info_extraction(
             self,
             utterances: List[Dict[str, str]],
@@ -229,8 +245,15 @@ class AIAssistant(_Singleton):
         instructions = self._llm.instructions.get(INFO_EXTRACTION)
         if instructions is not None:
             utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
+        #
+        dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, INFO_EXTRACTION)
 
-        return self.generate_llm(utterances, task=INFO_EXTRACTION, custom_generate_params=custom_generate_params)
+        return self.generate_llm(
+            dialogue,
+            task=INFO_EXTRACTION,
+            custom_generate_params=custom_generate_params,
+            approach=PLAIN_COMPLETION
+        )
 
     def kb_qa(
             self,
@@ -255,5 +278,12 @@ class AIAssistant(_Singleton):
                 TEXT: f"{template['prefix']}{BLOCK_SEP}"
                       f"{BLOCK_SEP.join(template['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1))}"
             })
+        #
+        dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, KB_QA)
 
-        return self.generate_llm(utterances, task=KB_QA, custom_generate_params=custom_generate_params)
+        return self.generate_llm(
+                dialogue,
+                task=KB_QA,
+                custom_generate_params=custom_generate_params,
+                approach=PLAIN_COMPLETION
+            )
