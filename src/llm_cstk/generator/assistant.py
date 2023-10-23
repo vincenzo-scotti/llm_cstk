@@ -45,15 +45,24 @@ class AIAssistant(_Singleton):
 
     def generate_llm(
             self,
-            utterances: List[Dict[str, str]],
+            sample: Union[List[Dict[str, str]], str],
             task: Optional[Task] = None,
-            custom_generate_params: Optional[Dict] = None
+            custom_generate_params: Optional[Dict] = None,
+            approach: LLMCompletionApproach = CHAT_COMPLETION
     ) -> Dict[str, str]:
         #
         if custom_generate_params is None:
             custom_generate_params = dict()
         #
-        response: str = self._llm.completion(utterances, **(self._get_llm_params(task) | custom_generate_params))
+        if approach == PLAIN_COMPLETION:
+            response = self._llm.completion(sample, **(self._get_llm_params(task) | custom_generate_params))
+        elif approach == CHAT_COMPLETION:
+            response = self._llm.chat_completion(sample, **(self._get_llm_params(task) | custom_generate_params))
+        else:
+            raise ValueError(
+                f"Unknown LLM completion approach: `{approach}`, "
+                f"accepted values are {', '.join(f'{repr(t)}' for t in LLMCompletionApproach)}"
+            )
         output: Dict[str, str] = {SPEAKER: AI, TEXT: response}
 
         return output
@@ -85,58 +94,45 @@ class AIAssistant(_Singleton):
                 f"Unknown model type: `{model}`, accepted values are {', '.join(f'{repr(t)}' for t in LM)}"
             )
 
-    def _build_user_message_response_suggestion_llm(
+    def _prepare_dialogue_response_suggestion_llm(
             self,
             utterances: List[Dict[str, str]],
-            speaker: str,
+            speaker: Optional[str] = None,
             info: Optional[str] = None,
             candidates: Optional[List[Dict[str, str]]] = None,
             relevant_documents: Optional[List[str]] = None
-    ) -> Dict[str, str]:
+    ) -> str:
         #
         template = self._llm.templates[RESPONSE_SUGGESTION][UTTERANCES]
-        dialogue: str = template['sep'].join(
+        dialogue: List[str] = list()
+        dialogue.extend(
             template['format'].format(utterance[SPEAKER], utterance[TEXT]).strip()
-            for utterance in utterances[:template.get('n_ctx', len(utterances))]
+            for utterance in utterances[-template.get('n_ctx', len(utterances)):]
         )
-        if len(utterances) > template.get('n_ctx', len(utterances)):
-            dialogue = f"{ELLIPS}{template['sep']}{dialogue}"
-        if info is not None:
-            dialogue = f"{info}{template['sep']}{dialogue}"
         #
-        template = self._llm.templates[RESPONSE_SUGGESTION][DIALOGUE]
-        user_message: str = template['format'].format(dialogue, speaker)
+        if len(utterances) > template.get('n_ctx', len(utterances)):
+            dialogue.insert(0, ELLIPS)
+        if info is not None:
+            dialogue.insert(0, info)
         #
         if candidates is not None and len(candidates) > 0:
-            template = self._llm.templates[RESPONSE_SUGGESTION][CANDIDATES]
+            template_ = self._llm.templates[RESPONSE_SUGGESTION][CANDIDATES]
             candidates = BLOCK_SEP.join(
-                template['format'].format(i, example[TEXT]) for i, example in enumerate(candidates, start=1)
+                template_['format'].format(i, example[TEXT]) for i, example in enumerate(candidates, start=1)
             )
-            user_message = f"{user_message}{BLOCK_SEP}{template['prefix']}{BLOCK_SEP}{candidates}"
+            dialogue.append(template['format'].format(SYSTEM, candidates))
         #
         if relevant_documents is not None and len(relevant_documents) > 0:
-            template = self._llm.templates[RESPONSE_SUGGESTION][RELEVANT_DOCS]
+            template_ = self._llm.templates[RESPONSE_SUGGESTION][RELEVANT_DOCS]
             relevant_documents = BLOCK_SEP.join(
-                template['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1)
+                template_['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1)
             )
-            user_message = f"{user_message}{BLOCK_SEP}{template['prefix']}{BLOCK_SEP}{relevant_documents}"
+            dialogue.append(template['format'].format(SYSTEM, relevant_documents))
+        #
+        if speaker is not None:
+            dialogue.append(template['format'].format(speaker, ''))
 
-        return {SPEAKER: USER, TEXT: user_message}
-
-    def _build_message_pair_response_suggestion_llm(
-            self, sample: Dict[str, Union[str, List[Dict[str, str]]]]
-    ) -> List[Dict[str, str]]:
-        sample = copy.deepcopy(sample)
-        if RESPONSE in sample:
-            response = sample.pop(RESPONSE)
-        else:
-            response = sample[UTTERANCES].pop(len(sample[UTTERANCES]) - 1)
-        user_message = self._build_user_message_response_suggestion_llm(
-            sample[UTTERANCES], response[SPEAKER], info=sample.get(INFO)
-        )
-        assistant_response = {SPEAKER: AI, TEXT: response[TEXT]}
-
-        return [user_message, assistant_response]
+        return template['sep'].join(dialogue)
 
     def response_suggestion_llm(
             self,
@@ -144,7 +140,7 @@ class AIAssistant(_Singleton):
             speaker: str,
             corpus: str,
             info: Optional[str] = None,
-            examples: Optional[List[Dict[str, Union[str, List[str]]]]] = None,
+            examples: Optional[List[Dict[str, Union[str, List[Dict[str, str]]]]]] = None,
             candidates: Optional[List[Dict[str, str]]] = None,
             relevant_documents: Optional[List[str]] = None,
             ask_query: bool = False,
@@ -155,26 +151,33 @@ class AIAssistant(_Singleton):
         dialogue = list()
         instructions = self._llm.instructions.get(RESPONSE_SUGGESTION)
         if instructions is not None:
-            dialogue.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
+            template = self._llm.templates.get(RESPONSE_SUGGESTION)[UTTERANCES]
+            dialogue.append(template['format'].format(SYSTEM, instructions))  # [{SPEAKER: SYSTEM, TEXT: instructions}]
         if examples is not None:
             for example in examples:
-                dialogue += self._build_message_pair_response_suggestion_llm(example)
-        dialogue.append(self._build_user_message_response_suggestion_llm(
+                dialogue.append(
+                    self._prepare_dialogue_response_suggestion_llm(example[UTTERANCES], info=example.get(INFO))
+                )
+        if ask_query:
+            template = self._llm.templates.get(RESPONSE_SUGGESTION)[QUERY]
+            utterances.append({SPEAKER: SYSTEM, TEXT: template['message']})
+        dialogue.append(self._prepare_dialogue_response_suggestion_llm(
             utterances,
-            speaker,
+            speaker=speaker,
             info=info,
             candidates=candidates if not ask_query else None,
             relevant_documents=relevant_documents if not ask_query else None
         ))
-        if ask_query:
-            template = self._llm.templates.get(KB_QA)[QUERY]
-            utterances.append({
-                SPEAKER: SYSTEM,
-                TEXT: template['message']
-            })
+        template = self._llm.templates.get(RESPONSE_SUGGESTION)[DIALOGUE]
+        dialogue = template['sep'].join(dialogue)
 
         return [
-            self.generate_llm(dialogue, task=RESPONSE_SUGGESTION, custom_generate_params=custom_generate_params)
+            self.generate_llm(
+                dialogue,
+                task=RESPONSE_SUGGESTION,
+                custom_generate_params=custom_generate_params,
+                approach=PLAIN_COMPLETION
+            )
             for _ in range(n_samples)
         ]
 

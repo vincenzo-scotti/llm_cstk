@@ -8,6 +8,7 @@ from llm_cstk.utils.common import _Singleton
 LM: TypeAlias = Literal['llm', 'custom_lm']
 CustomLM: TypeAlias = Union[DialogueLM]
 Task: TypeAlias = Literal['response_suggestion', 'info_extraction', 'kb_qa']
+LLMCompletionApproach: TypeAlias = Literal['plain_completion', 'chat_completion']
 
 # Constants
 
@@ -19,18 +20,24 @@ USER: str = 'user'
 # Message structure
 CHOICES: str = 'choices'
 MESSAGE: str = 'message'
+PROMPT: str = 'prompt'
 MESSAGES: str = 'messages'
 ROLE: str = 'role'
 CONTENT: str = 'content'
 
 # Requests info
 HEADERS: Dict[str, str] = {'accept': 'application/json', 'Content-Type': 'application/json'}
-COMPLETIONS_PATH: str = '/v1/chat/completions'
+COMPLETIONS_PATH: str = '/v1/completions'
+CHAT_COMPLETIONS_PATH: str = '/v1/chat/completions'
 
 # Tasks
 RESPONSE_SUGGESTION: str = 'response_suggestion'
 INFO_EXTRACTION: str = 'info_extraction'
 KB_QA: str = 'kb_qa'
+
+# Approaches
+PLAIN_COMPLETION: str = 'plain_completion'
+CHAT_COMPLETION: str = 'chat_completion'
 
 # Templates
 DIALOGUE: str = 'dialogue'
