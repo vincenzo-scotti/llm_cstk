@@ -130,7 +130,8 @@ class AIAssistant(_Singleton):
             dialogue.append(template['format'].format(SYSTEM, relevant_documents))
         #
         if speaker is not None:
-            dialogue.append(template['format'].format(speaker, ''))
+            template_ = self._llm.templates[RESPONSE_SUGGESTION][PROMPT]
+            dialogue.append(template_['format'].format(speaker))
 
         return template['sep'].join(dialogue)
 
