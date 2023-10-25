@@ -117,14 +117,14 @@ class AIAssistant(_Singleton):
         #
         if candidates is not None and len(candidates) > 0:
             template_ = self._llm.templates[RESPONSE_SUGGESTION][CANDIDATES]
-            candidates = BLOCK_SEP.join(
+            candidates = template_['prefix'] + BLOCK_SEP + BLOCK_SEP.join(
                 template_['format'].format(i, example[TEXT]) for i, example in enumerate(candidates, start=1)
             )
             dialogue.append(template['format'].format(SYSTEM, candidates))
         #
         if relevant_documents is not None and len(relevant_documents) > 0:
             template_ = self._llm.templates[RESPONSE_SUGGESTION][RELEVANT_DOCS]
-            relevant_documents = BLOCK_SEP.join(
+            relevant_documents = template_['prefix'] + BLOCK_SEP + BLOCK_SEP.join(
                 template_['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1)
             )
             dialogue.append(template['format'].format(SYSTEM, relevant_documents))
@@ -161,7 +161,13 @@ class AIAssistant(_Singleton):
                 )
         if ask_query:
             template = self._llm.templates.get(RESPONSE_SUGGESTION)[QUERY]
-            utterances.append({SPEAKER: SYSTEM, TEXT: template['message']})
+            query_request = template['message']
+            if 'usage' in template:
+                query_request = query_request + BLOCK_SEP + template['usage']['prefix'] + BLOCK_SEP + BLOCK_SEP.join(
+                    template['usage']['format'].format(i, example)
+                    for i, example in enumerate(template['usage']['examples'], start=1)
+                )
+            utterances.append({SPEAKER: SYSTEM, TEXT: query_request})
         dialogue.append(self._prepare_dialogue_response_suggestion_llm(
             utterances,
             speaker=speaker,
