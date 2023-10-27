@@ -44,6 +44,7 @@ DIALOGUE: str = 'dialogue'
 CANDIDATES: str = 'candidates'
 RELEVANT_DOCS: str = 'docs'
 RELEVANT_DOC: str = 'doc'
+DOC_SELECTION: str = 'doc_selection'
 
 MODEL: str = 'model'
 CONFIGS: str = 'configs'
