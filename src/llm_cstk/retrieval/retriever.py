@@ -333,7 +333,9 @@ class DocRetriever(_Singleton):
         query: pd.DataFrame = self._prepare_query(query, chunk_query, query_chunk_size, query_chunk_stride)
         #
         if QUERY in search_results.columns:
-            search_results = search_results.drop([QID, QUERY], axis=1)
+            search_results = search_results.drop([QUERY], axis=1)
+        if QID in search_results:
+            search_results = search_results.drop([QID], axis=1)
         search_results = search_results.merge(query, how='cross')
         # Build snippet generation pipeline
         snippet_pipeline: pt.Transformer = self._build_snippet_pipeline(
