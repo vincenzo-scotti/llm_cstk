@@ -1,5 +1,8 @@
 import pyterrier as pt
 
+from functools import partial
+from nltk import word_tokenize
+
 from .semantic import SemanticPTRanker
 from .lexical import LexicalPTRanker
 from .query import *
@@ -29,6 +32,8 @@ class PTTransformerFactory(_Singleton):
         #
         self._semantic_ranker: SemanticPTRanker = SemanticPTRanker.load(**self._submodules_params['semantic'])
         self._lexical_ranker: LexicalPTRanker = LexicalPTRanker.load(**self._submodules_params['lexical'])
+        # Tokeniser
+        self._tokeniser: Callable = partial(word_tokenize, preserve_line=False)
 
     @classmethod
     def load(cls, *args, **kwargs):
@@ -38,6 +43,11 @@ class PTTransformerFactory(_Singleton):
                 for k, v in configs.items():
                     kwargs[f'{submodule}__{k}'] = v
         return super().load(*args, **kwargs)
+
+    def query_pre_processor(self, size: Optional[int], stride: Optional[int]):
+        return pt.apply.generic(
+            expand_query(size, stride, self._tokeniser)
+        )
 
     def query_cleaner(self, scoring: Scoring):
         if scoring == 'semantic':

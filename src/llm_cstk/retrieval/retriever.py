@@ -3,9 +3,6 @@ from functools import lru_cache
 import pandas as pd
 import pyterrier as pt
 
-from functools import partial
-from nltk import word_tokenize
-
 from .pyterrier_extensions import *
 from .pyterrier_extensions.utils import *
 from .pyterrier_extensions.utils import _Singleton
@@ -39,8 +36,6 @@ class DocRetriever(_Singleton):
         self._transformer_factory: PTTransformerFactory = PTTransformerFactory.load(
             **self._submodules_params['transformer_factory']
         )
-        # Tokeniser
-        self._tokeniser: Callable = partial(word_tokenize, preserve_line=False)
 
     @classmethod
     def load(cls, *args, **kwargs):
@@ -95,6 +90,7 @@ class DocRetriever(_Singleton):
 
     def _build_search_pipeline(
             self,
+            query: Union[str, List[str]],
             corpus: str,
             ranking: Scoring,
             reranking: Optional[Scoring],
@@ -102,8 +98,15 @@ class DocRetriever(_Singleton):
             doc_chunk_size: Optional[int],
             doc_chunk_stride: Optional[int],
             doc_chunks_aggregation: Optional[DocAggregation],
+            chunk_query: bool,
+            query_chunk_size: Optional[int],
+            query_chunk_stride: Optional[int],
             query_chunks_aggregation: Optional[QueryAggregation],
     ) -> pt.Transformer:
+        # Query pre-processing (optional)
+        query_pre_processor: Optional[pt.Transformer] = self._transformer_factory.query_pre_processor(
+            query_chunk_size, query_chunk_stride
+        ) if isinstance(query, list) or chunk_query else None
         # Query cleaning (optional)
         ranking_query_cleaner: Optional[pt.Transformer] = self._transformer_factory.query_cleaner(ranking)
         reranking_query_cleaner: Optional[pt.Transformer] = self._transformer_factory.query_cleaner(
@@ -144,6 +147,8 @@ class DocRetriever(_Singleton):
             pipeline = doc_pre_ranker >> pipeline
         if ranking_query_cleaner is not None:
             pipeline = ranking_query_cleaner >> pipeline
+        if query_pre_processor is not None:
+            pipeline = query_pre_processor >> pipeline
         if reranking_query_cleaner is not None:
             pipeline >>= reranking_query_cleaner
         if doc_reranker is not None:
@@ -158,14 +163,22 @@ class DocRetriever(_Singleton):
     def _build_snippet_pipeline(
             self,
             search_results: pd.DataFrame,
+            query: Union[str, List[str]],
             corpus: str,
             ranking: Scoring,
             reranking: Optional[Scoring],
             doc_chunk_size: Optional[int],
             doc_chunk_stride: Optional[int],
+            chunk_query: bool,
+            query_chunk_size: Optional[int],
+            query_chunk_stride: Optional[int],
             query_chunks_aggregation: Optional[QueryAggregation],
             n_passages: int
     ) -> pt.Transformer:
+        # Query pre-processing (optional)
+        query_pre_processor: Optional[pt.Transformer] = self._transformer_factory.query_pre_processor(
+            query_chunk_size, query_chunk_stride
+        ) if isinstance(query, list) or chunk_query else None
         # Query cleaning (optional)
         scoring_query_cleaner: Optional[pt.Transformer] = self._transformer_factory.query_cleaner(
             reranking
@@ -192,37 +205,12 @@ class DocRetriever(_Singleton):
             pipeline = raw_doc_loader >> pipeline
         if scoring_query_cleaner is not None:
             pipeline = scoring_query_cleaner >> pipeline
+        if query_pre_processor is not None:
+            pipeline = query_pre_processor >> pipeline
         if query_chunks_aggregator is not None:
             pipeline >>= query_chunks_aggregator
 
         return pt.text.snippets(pipeline, joinstr=SNIPPET_SEP, num_psgs=n_passages)
-
-    def _prepare_query(
-            self,
-            query: Union[str, List[str]],
-            chunk_query: bool = False,
-            chunk_size: Optional[int] = None,
-            chunk_stride: Optional[int] = None,
-    ) -> pd.DataFrame:
-        # TODO rework with query expansion
-        # Prepare query in correct format
-        if isinstance(query, str):
-            if chunk_query:
-                tokenised_query: List[str] = self._tokeniser(query)
-                query = [
-                    ' '.join(tokenised_query[idx:idx+chunk_size])
-                    for idx in range(0, len(tokenised_query), chunk_stride)
-                ]
-            else:
-                query = [query]
-        if len(query) > 1:
-            query = pd.DataFrame({QID: [f'q%p{i + 1}' for i, q in enumerate(query)], QUERY: query})
-        elif len(query) == 1:
-            query = pd.DataFrame({QID: ['q'], QUERY: query})
-        else:
-            raise ValueError(f"Improper query format: \'{query}\'")
-
-        return query
 
     def __call__(self, *args, **kwargs):
         return self.search(*args, **kwargs)
@@ -292,9 +280,9 @@ class DocRetriever(_Singleton):
     ) -> pd.DataFrame:
         # Prepare query
         query: Union[str, List[str]] = list(query) if isinstance(query, tuple) else query
-        query: pd.DataFrame = self._prepare_query(query, chunk_query, query_chunk_size, query_chunk_stride)
         # Build search pipeline
         search_pipeline: pt.Transformer = self._build_search_pipeline(
+            query,
             corpus,
             ranking,
             reranking,
@@ -302,8 +290,13 @@ class DocRetriever(_Singleton):
             doc_chunk_size,
             doc_chunk_stride,
             doc_score_aggregation,
+            chunk_query,
+            query_chunk_size,
+            query_chunk_stride,
             query_score_aggregation
         )
+        #
+        query: pd.DataFrame = pd.DataFrame({QID: ['q'], QUERY: [query]})
         # Run search
         results: pd.DataFrame = search_pipeline.transform(query)
 
@@ -330,24 +323,28 @@ class DocRetriever(_Singleton):
         search_results: pd.DataFrame = pd.DataFrame(values, columns=keys)
         # Prepare query
         query: Union[str, List[str]] = list(query) if isinstance(query, tuple) else query
-        query: pd.DataFrame = self._prepare_query(query, chunk_query, query_chunk_size, query_chunk_stride)
-        #
-        if QUERY in search_results.columns:
-            search_results = search_results.drop([QUERY], axis=1)
-        if QID in search_results:
-            search_results = search_results.drop([QID], axis=1)
-        search_results = search_results.merge(query, how='cross')
         # Build snippet generation pipeline
         snippet_pipeline: pt.Transformer = self._build_snippet_pipeline(
             search_results,
+            query,
             corpus,
             ranking,
             reranking,
             doc_chunk_size,
             doc_chunk_stride,
+            chunk_query,
+            query_chunk_size,
+            query_chunk_stride,
             query_score_aggregation,
             n_passages
         )
+        #
+        query: pd.DataFrame = pd.DataFrame({QID: ['q'], QUERY: [query]})
+        if QUERY in search_results.columns:
+            search_results = search_results.drop([QUERY], axis=1)
+        if QID in search_results:
+            search_results = search_results.drop([QID], axis=1)
+        search_results = search_results.merge(query, how='cross')
         # Run search
         results: pd.DataFrame = snippet_pipeline.transform(search_results)
 

@@ -25,7 +25,11 @@ EmbeddingsCache: TypeAlias = Dict[str, Union[str, EmbeddingVector]]
 # Constants
 
 QID: str = 'qid'
+OLDQID: str = 'oldqid'
+TMPQID: str = 'tmpqid'
 QUERY: str = 'query'
+OLDQUERY: str = 'oldquery'
+TMPQUERY: str = 'tmpquery'
 DOCNO: str = 'docno'
 DOCID: str = 'docid'
 TEXT: str = 'text'
