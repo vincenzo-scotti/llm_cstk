@@ -295,7 +295,7 @@ class _RetrievalChatData(_ChatData):
                 for d_idx, sample in enumerate(self.data)
             ) + Parallel(verbose=self.VERBOSITY_LEVEL)(
                 delayed(self._sample_to_doc_chunk)(
-                    sample, d_idx, c_idx, s_idx, max(s_idx + size, len(sample[UTTERANCES]))
+                    sample, d_idx, c_idx, s_idx, min(s_idx + size, len(sample[UTTERANCES]))
                 )
                 for d_idx, sample in enumerate(self.data)
                 for c_idx, s_idx in enumerate(range(0, len(sample[UTTERANCES]), stride), start=1)
