@@ -76,7 +76,7 @@ The chat-related functionalities are:
 - **Information extraction**: given a reference document, the user interacts with an LLM-based chatbot to extract relevant information.
 - **Knowledge-based question answering**: the user discusses with an LLM-based chatbot that can exploit external information from a knowledge base to answer.
 
-In the examples, we assume that the service is listening to port `8999`.
+In the examples, we assume that the service is listening to port `5001`.
 
 The most straightforward use of the chat API is to generate a response using either a LLM or a custom LM.
 We provide a generic function encapsulating all chat functionalities and some specific functions to simplify the use of the chat system.
@@ -84,7 +84,7 @@ We provide a generic function encapsulating all chat functionalities and some sp
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8999/generate'
+>>> url = 'http://127.0.0.1:5001/generate'
 >>> req_data = {
 ...   
 ... }
@@ -107,7 +107,7 @@ You can use a language model fine-tuned on domain-specific data to generate cand
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8999/generate/response_suggestion/custom_lm'
+>>> url = 'http://127.0.0.1:5001/generate/response_suggestion/custom_lm'
 >>> req_data = {
 ...   'params': {
 ...     'n_samples': 3,  # `type: int`, the number of samples to generate
@@ -140,7 +140,7 @@ Given a dialogue and a speaker (the identifier of the person that should respond
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8999/generate/response_suggestion/llm'
+>>> url = 'http://127.0.0.1:5001/generate/response_suggestion/llm'
 >>> req_data = {
 ...   'params': {
 ...     'n_samples': 3,  # `type: int`, the number of samples to generate
@@ -179,7 +179,7 @@ This is helpful to guide the LLM on unseen dialogues and tasks
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8999/generate/response_suggestion/llm'
+>>> url = 'http://127.0.0.1:5001/generate/response_suggestion/llm'
 >>> req_data = {
 ...   'params': {
 ...     'n_samples': 3,  # `type: int`, the number of samples to generate
@@ -220,7 +220,7 @@ This is useful to analyse an existing document and get some insights on its cont
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8999/generate/info_extraction'
+>>> url = 'http://127.0.0.1:5001/generate/info_extraction'
 >>> req_data = {
 ...   'params': {
 ...     'document': 'GPU installation guide ...',  # `type: str`, the text of the document to analyse
@@ -245,7 +245,7 @@ This is useful to get insights from the knowledge base  without querying it manu
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8999/generate/kb_qa'
+>>> url = 'http://127.0.0.1:5001/generate/kb_qa'
 >>> req_data = {
 ...   'params': {
 ...     'relevant_documents': [  # `type: List[str]`, a list with possibly useful document (passages), each document is a string, to help respond
@@ -272,7 +272,7 @@ The search-related functionalities are:
 - **Generating a snippet**: given the query results, highlight the passages more relevant to the query.
 - **Adding new corpora**: add a new document collection to search over.
 
-In the examples, we assume that the service is listening to port `8666`.
+In the examples, we assume that the service is listening to port `5000`.
 
 #### Retrieve document (passage)
 
@@ -282,7 +282,7 @@ We provide a generic function encapsulating all retrieval functionalities and so
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/search'
+>>> url = 'http://127.0.0.1:5000/search'
 >>> req_data = {
 ...   ...
 ... }
@@ -304,7 +304,7 @@ This is useful for building a search engine.
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/search/doc'
+>>> url = 'http://127.0.0.1:5000/search/doc'
 >>> req_data = {
 ...   ...
 ... }
@@ -323,7 +323,7 @@ This is useful for the knowledge-based question-answering chat function, which u
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/search/doc_chunk'
+>>> url = 'http://127.0.0.1:5000/search/doc_chunk'
 >>> req_data = {
 ...   ...
 ... }
@@ -345,7 +345,7 @@ This is useful for searching documents similar to a reference one.
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/search/doc_long_query'
+>>> url = 'http://127.0.0.1:5000/search/doc_long_query'
 >>> req_data = {
 ...   ...
 ... }
@@ -364,7 +364,7 @@ This is useful for searching documents similar to a reference one and using the 
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/search/doc_chunk_long_query'
+>>> url = 'http://127.0.0.1:5000/search/doc_chunk_long_query'
 >>> req_data = {
 ...   ...
 ... }
@@ -383,7 +383,7 @@ We provide a generic function encapsulating all snippet generation functionaliti
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/snippet'
+>>> url = 'http://127.0.0.1:5000/snippet'
 >>> req_data = {
 ...   ...
 ... }
@@ -402,7 +402,7 @@ This is useful for providing a preview in a search engine.
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/snippet/generate'
+>>> url = 'http://127.0.0.1:5000/snippet/generate'
 >>> req_data = {
 ...   ...
 ... }
@@ -421,7 +421,7 @@ This is useful for providing a preview when searching for documents similar to a
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/snippet/generate_long_query'
+>>> url = 'http://127.0.0.1:5000/snippet/generate_long_query'
 >>> req_data = {
 ...   ...
 ... }
@@ -440,7 +440,7 @@ This is useful to perform custom similarity/relevance computations rather than r
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/score/query_doc_pair'
+>>> url = 'http://127.0.0.1:5000/score/query_doc_pair'
 >>> req_data = {
 ...   ...
 ... }
@@ -456,7 +456,7 @@ This is useful to perform custom similarity/relevance computations rather than r
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/corpus'
+>>> url = 'http://127.0.0.1:5000/corpus'
 >>> req_data = {
 ...   ...
 ... }
@@ -472,7 +472,7 @@ This is useful to perform custom similarity/relevance computations rather than r
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/corpus/add'
+>>> url = 'http://127.0.0.1:5000/corpus/add'
 >>> req_data = {
 ...   ...
 ... }
@@ -488,7 +488,7 @@ This is useful to perform custom similarity/relevance computations rather than r
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/corpus/add_large'
+>>> url = 'http://127.0.0.1:5000/corpus/add_large'
 >>> req_data = {
 ...   ...
 ... }
@@ -504,7 +504,7 @@ This is useful to perform custom similarity/relevance computations rather than r
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/corpus/index'
+>>> url = 'http://127.0.0.1:5000/corpus/index'
 >>> req_data = {
 ...   ...
 ... }
@@ -520,7 +520,7 @@ This is useful to perform custom similarity/relevance computations rather than r
 ```python
 >>> import requests
 >>> import json
->>> url = 'http://127.0.0.1:8666/corpus/index_large'
+>>> url = 'http://127.0.0.1:5000/corpus/index_large'
 >>> req_data = {
 ...   ...
 ... }
