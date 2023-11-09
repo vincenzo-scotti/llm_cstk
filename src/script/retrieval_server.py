@@ -21,7 +21,7 @@ doc_retriever: Optional[DocRetriever] = None
 @flask_app.post("/search")
 def search():
     params = json.loads(request.data)['params']
-    results = doc_retriever.search(**params).to_json()
+    results = doc_retriever.search(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -31,7 +31,7 @@ def search():
 def snippet():
     params = json.loads(request.data)['params']
     params['search_results'] = pd.DataFrame(params['search_results'])
-    results = doc_retriever.snippet(**params).to_json()
+    results = doc_retriever.snippet(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -43,13 +43,13 @@ def corpus():
     params['docs'] = pd.DataFrame(params['docs'])
     if ['chunked_docs'] in params:
         params['chunked_docs'] = pd.DataFrame(params['chunked_docs'])
-    doc_retriever.corpus(**params).to_json()
+    doc_retriever.corpus(**params).to_dict(orient='list')
 
 
 @flask_app.post("/score/query_doc_pair")
 def score_query_doc_pair():
     params = json.loads(request.data)['params']
-    results = doc_retriever.score_query_doc_pair(**params).to_json()
+    results = doc_retriever.score_query_doc_pair(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -58,7 +58,7 @@ def score_query_doc_pair():
 @flask_app.post("/search/doc")
 def search_doc():
     params = json.loads(request.data)['params']
-    results = doc_retriever.search_doc(**params).to_json()
+    results = doc_retriever.search_doc(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -67,7 +67,7 @@ def search_doc():
 @flask_app.post("/search/doc_chunk")
 def search_doc_chunk():
     params = json.loads(request.data)['params']
-    results = doc_retriever.search_doc_chunk(**params).to_json()
+    results = doc_retriever.search_doc_chunk(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -76,7 +76,7 @@ def search_doc_chunk():
 @flask_app.post("/search/doc_long_query")
 def search_doc_long_query():
     params = json.loads(request.data)['params']
-    results = doc_retriever.search_doc_long_query(**params).to_json()
+    results = doc_retriever.search_doc_long_query(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -85,7 +85,7 @@ def search_doc_long_query():
 @flask_app.post("/search/doc_chunk_long_query")
 def search_doc_chunk_long_query():
     params = json.loads(request.data)['params']
-    results = doc_retriever.search_doc_chunk_long_query(**params).to_json()
+    results = doc_retriever.search_doc_chunk_long_query(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -95,7 +95,7 @@ def search_doc_chunk_long_query():
 def generate_snippet():
     params = json.loads(request.data)['params']
     params['search_results'] = pd.DataFrame(params['search_results'])
-    results = doc_retriever.generate_snippet(**params).to_json()
+    results = doc_retriever.generate_snippet(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -105,7 +105,7 @@ def generate_snippet():
 def generate_snippet_long_query():
     params = json.loads(request.data)['params']
     params['search_results'] = pd.DataFrame(params['search_results'])
-    results = doc_retriever.generate_snippet_long_query(**params).to_json()
+    results = doc_retriever.generate_snippet_long_query(**params).to_dict(orient='list')
     response = jsonify(results)
 
     return response
@@ -117,7 +117,7 @@ def add_corpus():
     params['docs'] = pd.DataFrame(params['docs'])
     if ['chunked_docs'] in params:
         params['chunked_docs'] = pd.DataFrame(params['chunked_docs'])
-    doc_retriever.add_corpus(**params).to_json()
+    doc_retriever.add_corpus(**params).to_dict(orient='list')
 
 
 @flask_app.post("/corpus/add_large")
@@ -127,19 +127,19 @@ def add_large_corpus():
     params['docs'] = pd.DataFrame(params['docs'])
     if ['chunked_docs'] in params:
         params['chunked_docs'] = pd.DataFrame(params['chunked_docs'])
-    doc_retriever.add_large_corpus(**params).to_json()
+    doc_retriever.add_large_corpus(**params).to_dict(orient='list')
 
 
 @flask_app.post("/corpus/index")
 def index_corpus():
     params = json.loads(request.data)['params']
-    doc_retriever.index_corpus(**params).to_json()
+    doc_retriever.index_corpus(**params).to_dict(orient='list')
 
 
 @flask_app.post("/corpus/index_large")
 def index_large_corpus():
     params = json.loads(request.data)['params']
-    doc_retriever.index_large_corpus(**params).to_json()
+    doc_retriever.index_large_corpus(**params).to_dict(orient='list')
 
 
 def main(args: Namespace):
