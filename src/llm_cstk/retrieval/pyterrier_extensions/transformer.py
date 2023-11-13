@@ -7,6 +7,7 @@ from .semantic import SemanticPTRanker
 from .lexical import LexicalPTRanker
 from .query import *
 from .document import reset_text_col
+from .results import *
 from .utils import *
 from .utils import _Singleton
 
@@ -215,3 +216,6 @@ class PTTransformerFactory(_Singleton):
                 f"Unknown query chunks aggregation method: \'{method}\', "
                 f"accepted values are {', '.join(f'{repr(t)}' for t in QueryAggregation)}"
             )
+
+    def get_sorter(self) -> pt.Transformer:
+        return pt.apply.generic(sort_results)

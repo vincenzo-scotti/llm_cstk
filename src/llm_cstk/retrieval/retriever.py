@@ -139,6 +139,10 @@ class DocRetriever(_Singleton):
         query_chunks_aggregator: Optional[pt.Transformer] = self._transformer_factory.query_chunks_aggregator(
             query_chunks_aggregation
         ) if query_chunks_aggregation is not None else None
+        # Sorting optional
+        sorter: Optional[pt.Transformer] = self._transformer_factory.get_sorter() if (
+            (chunk_doc and doc_chunks_aggregation) or query_chunks_aggregation
+        ) else None
         # Compose pipeline
         pipeline: pt.Transformer = doc_ranker
         if doc_chunks_generator is not None:
@@ -157,6 +161,8 @@ class DocRetriever(_Singleton):
             pipeline >>= doc_chunks_aggregator
         if query_chunks_aggregator is not None:
             pipeline >>= query_chunks_aggregator
+        if sorter is not None:
+            pipeline >>= sorter
 
         return pipeline
 
