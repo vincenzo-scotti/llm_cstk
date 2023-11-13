@@ -35,6 +35,7 @@ DOCID: str = 'docid'
 TEXT: str = 'text'
 RANK: str = 'rank'
 SCORE: str = 'score'
+SUMMARY: str = 'summary'
 
 TITLE: str = 'title'
 BODY: str = 'body'

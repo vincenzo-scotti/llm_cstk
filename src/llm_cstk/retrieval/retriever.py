@@ -218,6 +218,14 @@ class DocRetriever(_Singleton):
 
         return pt.text.snippets(pipeline, joinstr=SNIPPET_SEP, num_psgs=n_passages)
 
+    @staticmethod
+    def _post_process_search(query: Union[str, List[str]], results: pd.DataFrame):
+        return results[[DOCNO, SCORE]].to_dict(orient='list') | {QUERY: query}
+
+    @staticmethod
+    def _post_process_snippet(query: Union[str, List[str]], results: pd.DataFrame):
+        return results[[DOCNO, SCORE, SUMMARY]].to_dict(orient='list') | {QUERY: query}
+
     def __call__(self, *args, **kwargs):
         return self.search(*args, **kwargs)
 
@@ -237,7 +245,7 @@ class DocRetriever(_Singleton):
             query_chunk_size: Optional[int] = None,
             query_chunk_stride: Optional[int] = None,
             query_score_aggregation: Optional[QueryAggregation] = None
-    ):
+    ):  # TODO Update this method to use same approach of search
         query: List[str] = list(query)
         doc: List[str] = list(doc)
         # Prepare query
@@ -301,10 +309,10 @@ class DocRetriever(_Singleton):
             query_chunk_stride,
             query_score_aggregation
         )
-        #
-        query: pd.DataFrame = pd.DataFrame({QID: ['q'], QUERY: [query]})
         # Run search
-        results: pd.DataFrame = search_pipeline.transform(query)
+        results: pd.DataFrame = search_pipeline.transform(pd.DataFrame({QID: ['q'], QUERY: [query]}))
+        # Post-process results
+        results = self._post_process_search(query, results)
 
         return results
 
@@ -345,14 +353,12 @@ class DocRetriever(_Singleton):
             n_passages
         )
         #
-        query: pd.DataFrame = pd.DataFrame({QID: ['q'], QUERY: [query]})
-        if QUERY in search_results.columns:
-            search_results = search_results.drop([QUERY], axis=1)
-        if QID in search_results:
-            search_results = search_results.drop([QID], axis=1)
-        search_results = search_results.merge(query, how='cross')
+        search_results[QID] = 'q'
+        search_results[QUERY] = query
         # Run search
         results: pd.DataFrame = snippet_pipeline.transform(search_results)
+        # Post-process snippet results
+        results = self._post_process_search(query, results)
 
         return results
 
