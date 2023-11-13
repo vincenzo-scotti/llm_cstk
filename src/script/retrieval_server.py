@@ -43,7 +43,7 @@ def corpus():
     params['docs'] = pd.DataFrame(params['docs'])
     if ['chunked_docs'] in params:
         params['chunked_docs'] = pd.DataFrame(params['chunked_docs'])
-    doc_retriever.corpus(**params).to_dict(orient='list')
+    doc_retriever.corpus(**params)
 
 
 @flask_app.post("/score/query_doc_pair")
@@ -117,7 +117,7 @@ def add_corpus():
     params['docs'] = pd.DataFrame(params['docs'])
     if ['chunked_docs'] in params:
         params['chunked_docs'] = pd.DataFrame(params['chunked_docs'])
-    doc_retriever.add_corpus(**params).to_dict(orient='list')
+    doc_retriever.add_corpus(**params)
 
 
 @flask_app.post("/corpus/add_large")
@@ -127,19 +127,19 @@ def add_large_corpus():
     params['docs'] = pd.DataFrame(params['docs'])
     if ['chunked_docs'] in params:
         params['chunked_docs'] = pd.DataFrame(params['chunked_docs'])
-    doc_retriever.add_large_corpus(**params).to_dict(orient='list')
+    doc_retriever.add_large_corpus(**params)
 
 
 @flask_app.post("/corpus/index")
 def index_corpus():
     params = json.loads(request.data)['params']
-    doc_retriever.index_corpus(**params).to_dict(orient='list')
+    doc_retriever.index_corpus(**params)
 
 
 @flask_app.post("/corpus/index_large")
 def index_large_corpus():
     params = json.loads(request.data)['params']
-    doc_retriever.index_large_corpus(**params).to_dict(orient='list')
+    doc_retriever.index_large_corpus(**params)
 
 
 def main(args: Namespace):
