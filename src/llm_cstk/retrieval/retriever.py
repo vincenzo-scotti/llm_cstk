@@ -275,7 +275,6 @@ class DocRetriever(_Singleton):
 
         return results
 
-
     @lru_cache
     def search(
             self,
@@ -358,7 +357,7 @@ class DocRetriever(_Singleton):
         # Run search
         results: pd.DataFrame = snippet_pipeline.transform(search_results)
         # Post-process snippet results
-        results = self._post_process_search(query, results)
+        results = self._post_process_snippet(query, results)
 
         return results
 
