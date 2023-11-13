@@ -352,8 +352,8 @@ class DocRetriever(_Singleton):
             n_passages
         )
         #
-        search_results[QID] = 'q'
-        search_results[QUERY] = query
+        search_results[QID] = ['q'] * len(search_results)
+        search_results[QUERY] = [query] * len(search_results)
         # Run search
         results: pd.DataFrame = snippet_pipeline.transform(search_results)
         # Post-process snippet results
