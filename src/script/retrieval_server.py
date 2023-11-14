@@ -30,7 +30,10 @@ def search():
 @flask_app.post("/snippet")
 def snippet():
     params = json.loads(request.data)['params']
-    params['search_results'] = (params['search_results'].keys(), params['search_results'].values())
+    params['search_results'] = (
+        tuple(params['search_results'].keys()),
+        tuple(tuple(val) for val in params['search_results'].values())
+    )
     results = doc_retriever.snippet(**params)
     response = jsonify(results)
 
