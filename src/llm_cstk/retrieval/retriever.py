@@ -321,8 +321,8 @@ class DocRetriever(_Singleton):
             search_results: Tuple,
             query: Union[str, Tuple[str]],
             corpus: str,
-            doc_chunk_size: int,
-            doc_chunk_stride: int,
+            doc_chunk_size: Optional[int] = None,
+            doc_chunk_stride: Optional[int] = None,
             ranking: Scoring = 'semantic',
             reranking: Optional[Scoring] = None,
             chunk_query: bool = False,
@@ -520,7 +520,7 @@ class DocRetriever(_Singleton):
 
     def generate_snippet(
             self,
-            search_results: pd.DataFrame,
+            search_results: Dict[str, List],
             query: str,
             corpus: str,
             ranking: Scoring = 'semantic',
@@ -531,7 +531,7 @@ class DocRetriever(_Singleton):
     ) -> pd.DataFrame:
         #
         return self.snippet(
-            (tuple(search_results.columns), tuple(tuple(row) for _, row in search_results.iterrows())),
+            (tuple(search_results.keys()), tuple(zip(search_results.values()))),
             query,
             corpus,
             ranking=ranking,
@@ -543,7 +543,7 @@ class DocRetriever(_Singleton):
 
     def generate_snippet_long_query(
             self,
-            search_results: pd.DataFrame,
+            search_results: Dict[str, List],
             query: Union[str, List[str]],
             corpus: str,
             ranking: Scoring = 'semantic',
@@ -559,7 +559,7 @@ class DocRetriever(_Singleton):
         assert not isinstance(query, str) or query_score_aggregation is not None
         #
         return self.snippet(
-            (tuple(search_results.columns), tuple(tuple(row) for _, row in search_results.iterrows())),
+            (tuple(search_results.keys()), tuple(zip(search_results.values()))),
             tuple(query) if isinstance(query, list) else query,
             corpus,
             ranking=ranking,

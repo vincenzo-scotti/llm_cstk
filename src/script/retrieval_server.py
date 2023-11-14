@@ -32,7 +32,7 @@ def snippet():
     params = json.loads(request.data)['params']
     params['search_results'] = (
         tuple(params['search_results'].keys()),
-        tuple(tuple(val) for val in params['search_results'].values())
+        tuple(zip(*params['search_results'].values()))
     )
     results = doc_retriever.snippet(**params)
     response = jsonify(results)
@@ -97,7 +97,6 @@ def search_doc_chunk_long_query():
 @flask_app.post("/snippet/generate")
 def generate_snippet():
     params = json.loads(request.data)['params']
-    params['search_results'] = pd.DataFrame(params['search_results'])
     results = doc_retriever.generate_snippet(**params)
     response = jsonify(results)
 
@@ -107,7 +106,6 @@ def generate_snippet():
 @flask_app.post("/snippet/generate_long_query")
 def generate_snippet_long_query():
     params = json.loads(request.data)['params']
-    params['search_results'] = pd.DataFrame(params['search_results'])
     results = doc_retriever.generate_snippet_long_query(**params)
     response = jsonify(results)
 
