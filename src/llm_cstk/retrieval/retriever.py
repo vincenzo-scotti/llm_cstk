@@ -531,7 +531,7 @@ class DocRetriever(_Singleton):
     ) -> pd.DataFrame:
         #
         return self.snippet(
-            (tuple(search_results.keys()), tuple(zip(search_results.values()))),
+            (tuple(search_results.keys()), tuple(zip(*search_results.values()))),
             query,
             corpus,
             ranking=ranking,
@@ -559,7 +559,7 @@ class DocRetriever(_Singleton):
         assert not isinstance(query, str) or query_score_aggregation is not None
         #
         return self.snippet(
-            (tuple(search_results.keys()), tuple(zip(search_results.values()))),
+            (tuple(search_results.keys()), tuple(zip(*search_results.values()))),
             tuple(query) if isinstance(query, list) else query,
             corpus,
             ranking=ranking,
