@@ -241,7 +241,7 @@ class AIAssistant(_Singleton):
         templates = self._llm.templates[INFO_EXTRACTION]
         # User directive
         if 'directive' in templates:
-            document = templates['doc'].format(document)
+            document = templates['doc']['format'].format(document)
             utterances.insert(0, {SPEAKER: USER, TEXT: f"{templates['directive']}{BLOCK_SEP}{document}"})
         # System instructions
         instructions = self._llm.instructions.get(INFO_EXTRACTION)
@@ -345,7 +345,7 @@ class AIAssistant(_Singleton):
             random.shuffle(examples)
             for example in examples:
                 reference_documents_ = BLOCK_SEP.join(
-                    templates['doc'].format(i, doc)
+                    templates['doc']['format'].format(i, doc)
                     for i, doc in enumerate(example['input']['reference_documents'], start=1)
                 )
                 utterances.append({
@@ -355,7 +355,7 @@ class AIAssistant(_Singleton):
                 utterances.append({SPEAKER: AI, TEXT: example['output']})
         # Prompt
         reference_documents = BLOCK_SEP.join(
-            templates['doc'].format(i, doc) for i, doc in enumerate(reference_documents, start=1)
+            templates['doc']['format'].format(i, doc) for i, doc in enumerate(reference_documents, start=1)
         )
         utterances.append({SPEAKER: USER, TEXT: templates['input']['format'].format(question, reference_documents)})
         # Convert list of utterances into dialogue string
