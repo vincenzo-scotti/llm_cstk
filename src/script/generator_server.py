@@ -52,6 +52,33 @@ def generate_info_extraction_response():
     return response
 
 
+@flask_app.post("/generate/query_extraction")
+def generate_query_extraction_response():
+    params = json.loads(request.data)['params']
+    output = ai_assistant.query_extraction(**params)
+    response = jsonify({'response': output})
+
+    return response
+
+
+@flask_app.post("/generate/query_recognition")
+def generate_query_recognition_response():
+    params = json.loads(request.data)['params']
+    output = ai_assistant.query_recognition(**params)
+    response = jsonify({'response': output})
+
+    return response
+
+
+@flask_app.post("/generate/relevant_document_selection")
+def generate_relevant_document_selection_response():
+    params = json.loads(request.data)['params']
+    output = ai_assistant.relevant_document_selection(**params)
+    response = jsonify({'response': output})
+
+    return response
+
+
 @flask_app.post("/generate/kb_qa")
 def generate_kb_qa_response():
     params = json.loads(request.data)['params']

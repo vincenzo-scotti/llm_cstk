@@ -33,6 +33,9 @@ CHAT_COMPLETIONS_PATH: str = '/v1/chat/completions'
 # Tasks
 RESPONSE_SUGGESTION: str = 'response_suggestion'
 INFO_EXTRACTION: str = 'info_extraction'
+QUERY_EXTRACTION: str = 'query_extraction'
+QUERY_RECOGNITION: str = 'query_recognition'
+RELEVANT_DOCUMENT_SELECTION: str = 'relevant_document_selection'
 KB_QA: str = 'kb_qa'
 
 # Approaches

@@ -1,4 +1,5 @@
 import copy
+import random
 
 from .llm import LLMAPI
 from .custom_lm import CustomLMFactory
@@ -48,7 +49,7 @@ class AIAssistant(_Singleton):
             sample: Union[List[Dict[str, str]], str],
             task: Optional[Task] = None,
             custom_generate_params: Optional[Dict] = None,
-            approach: LLMCompletionApproach = CHAT_COMPLETION
+            approach: LLMCompletionApproach = PLAIN_COMPLETION
     ) -> Dict[str, str]:
         #
         if custom_generate_params is None:
@@ -145,13 +146,10 @@ class AIAssistant(_Singleton):
             examples: Optional[List[Dict[str, Union[str, List[Dict[str, str]]]]]] = None,
             candidates: Optional[List[Dict[str, str]]] = None,
             relevant_documents: Optional[List[str]] = None,
-            ask_query: bool = False,
-            select_docs: bool = False,
             custom_generate_params: Optional[Dict] = None,
             n_samples: int = 1
     ) -> List[Dict[str, str]]:
         # See https://openai.com/blog/gpt-4-api-general-availability in the "few-shot learning" example
-        assert not (ask_query and select_docs)
 
         dialogue = list()
         instructions = self._llm.instructions.get(RESPONSE_SUGGESTION)
@@ -163,52 +161,19 @@ class AIAssistant(_Singleton):
                 dialogue.append(
                     self._prepare_dialogue_response_suggestion_llm(example[UTTERANCES], info=example.get(INFO))
                 )
-        if ask_query:
-            template = self._llm.templates.get(RESPONSE_SUGGESTION)[QUERY]
-            utterances.append({
-                SPEAKER: SYSTEM,
-                TEXT: template['message']
-            })
-        elif relevant_documents is not None and len(relevant_documents) > 0 and select_docs:
-            template = self._llm.templates.get(RESPONSE_SUGGESTION)[DOC_SELECTION]
-            responses = list()
-            for doc in relevant_documents:
-                utterances_ = utterances + [{
-                    SPEAKER: SYSTEM,
-                    TEXT: f"{template['prefix']}{BLOCK_SEP}{template['format'].format(doc)}"
-                }]
-                dialogue_ = dialogue + [self._prepare_dialogue_response_suggestion_llm(
-                    utterances_,
-                    speaker=speaker,
-                    info=info
-                )]
 
-                template_ = self._llm.templates.get(RESPONSE_SUGGESTION)[DIALOGUE]
-                dialogue_ = template_['sep'].join(dialogue_)
-                responses.append(self.generate_llm(
-                    dialogue_,
-                    task=RESPONSE_SUGGESTION,
-                    custom_generate_params=custom_generate_params,
-                    approach=PLAIN_COMPLETION
-                ))
-            return responses
         dialogue.append(self._prepare_dialogue_response_suggestion_llm(
             utterances,
             speaker=speaker,
             info=info,
-            candidates=candidates if not (ask_query or select_docs) else None,
-            relevant_documents=relevant_documents if not (ask_query or select_docs) else None
+            candidates=candidates,
+            relevant_documents=relevant_documents
         ))
         template = self._llm.templates.get(RESPONSE_SUGGESTION)[DIALOGUE]
         dialogue = template['sep'].join(dialogue)
 
         return [
-            self.generate_llm(
-                dialogue,
-                task=RESPONSE_SUGGESTION,
-                custom_generate_params=custom_generate_params,
-                approach=PLAIN_COMPLETION
-            )
+            self.generate_llm(dialogue, task=RESPONSE_SUGGESTION, custom_generate_params=custom_generate_params)
             for _ in range(n_samples)
         ]
 
@@ -255,7 +220,7 @@ class AIAssistant(_Singleton):
         template = self._llm.templates[task][UTTERANCES]
         dialogue: List[str] = list()
         #
-        if INFO_EXTRACTION in self._llm.instructions:
+        if task in self._llm.instructions:
             template_ = self._llm.templates[task][INSTRUCTIONS]
             dialogue.append(template_['format'].format(utterances.pop(0)[TEXT]))
         #
@@ -272,70 +237,128 @@ class AIAssistant(_Singleton):
             document: str,
             custom_generate_params: Optional[Dict] = None
     ) -> Dict[str, str]:
-        template = self._llm.templates.get(INFO_EXTRACTION)[RELEVANT_DOC]
-        utterances.insert(0, {SPEAKER: SYSTEM, TEXT: template['format'].format(document)})
+        # Gather templates
+        templates = self._llm.templates[INFO_EXTRACTION]
+        # User directive
+        if 'directive' in templates:
+            document = templates['doc'].format(document)
+            utterances.insert(0, {SPEAKER: USER, TEXT: f"{templates['directive']}{BLOCK_SEP}{document}"})
+        # System instructions
         instructions = self._llm.instructions.get(INFO_EXTRACTION)
         if instructions is not None:
             utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
-        #
+        # Convert list of utterances into dialogue string
         dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, INFO_EXTRACTION)
 
-        return self.generate_llm(
-            dialogue,
-            task=INFO_EXTRACTION,
-            custom_generate_params=custom_generate_params,
-            approach=PLAIN_COMPLETION
-        )
+        return self.generate_llm(dialogue, task=INFO_EXTRACTION, custom_generate_params=custom_generate_params)
+
+    def query_extraction(self, utterances: List[Dict[str, str]], custom_generate_params: Optional[Dict] = None):
+        ...  # TODO
+
+    def query_recognition(
+            self,
+            query: List[Dict[str, str]],
+            examples: Optional[List[Dict[str, str]]] = None,
+            custom_generate_params: Optional[Dict] = None
+    ):
+        # Create utterances container
+        utterances = list()
+        # System instructions
+        instructions = self._llm.instructions.get(QUERY_RECOGNITION)
+        if instructions is not None:
+            utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
+        # Gather templates
+        templates = self._llm.templates[QUERY_RECOGNITION]
+        # User directive
+        if 'directive' in templates:
+            utterances.append({SPEAKER: USER, TEXT: templates['directive']})
+        # Examples (if any)
+        if examples is not None or 'examples' in templates:
+            examples = examples if examples is not None else templates['examples']
+            random.shuffle(examples)
+            for example in examples:
+                utterances.append({SPEAKER: USER, TEXT: templates['query']['format'].format(example['input'])})
+                utterances.append({SPEAKER: AI, TEXT: example['output']})
+        # Prompt
+        utterances.append({SPEAKER: USER, TEXT: templates['query']['format'].format(query)})
+        # Convert list of utterances into dialogue string
+        dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, QUERY_RECOGNITION)
+
+        return self.generate_llm(dialogue, task=QUERY_RECOGNITION, custom_generate_params=custom_generate_params)
+
+    def relevant_document_selection(
+            self,
+            question: str,
+            document: str,
+            examples: Optional[List[Dict[str, Union[str, Dict[str, str]]]]] = None,
+            custom_generate_params: Optional[Dict] = None
+    ):
+        # Create utterances container
+        utterances = list()
+        # System instructions
+        instructions = self._llm.instructions.get(RELEVANT_DOCUMENT_SELECTION)
+        if instructions is not None:
+            utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
+        # Gather templates
+        templates = self._llm.templates[RELEVANT_DOCUMENT_SELECTION]
+        # User directive
+        if 'directive' in templates:
+            utterances.append({SPEAKER: USER, TEXT: templates['directive']})
+        # Examples (if any)
+        if examples is not None or 'examples' in templates:
+            examples = examples if examples is not None else templates['examples']
+            random.shuffle(examples)
+            for example in examples:
+                utterances.append({
+                    SPEAKER: USER,
+                    TEXT: templates['input']['format'].format(example['input']['question'], example['input']['document'])
+                })
+                utterances.append({SPEAKER: AI, TEXT: example['output']})
+        # Prompt
+        utterances.append({SPEAKER: USER, TEXT: templates['input']['format'].format(question, document)})
+        # Convert list of utterances into dialogue string
+        dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, RELEVANT_DOCUMENT_SELECTION)
+
+        return self.generate_llm(dialogue, task=RELEVANT_DOCUMENT_SELECTION, custom_generate_params=custom_generate_params)
 
     def kb_qa(
             self,
-            utterances: List[Dict[str, str]],
-            relevant_documents: Optional[List[str]] = None,
-            ask_query: bool = False,
-            select_docs: bool = False,
+            question: str,
+            reference_documents: List[str],
+            examples: Optional[List[Dict[str, Union[str, Dict[str, Union[str, List[str]]]]]]] = None,
             custom_generate_params: Optional[Dict] = None
-    ) -> Union[List[Dict[str, str]], Dict[str, str]]:
-        assert not (ask_query and select_docs)
-
+    ):
+        # Create utterances container
+        utterances = list()
+        # System instructions
         instructions = self._llm.instructions.get(KB_QA)
         if instructions is not None:
-            utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
-        if ask_query:
-            template = self._llm.templates.get(KB_QA)[QUERY]
-            utterances.append({
-                SPEAKER: SYSTEM,
-                TEXT: template['message']
-            })
-        elif relevant_documents is not None and len(relevant_documents) > 0:
-            if select_docs:
-                template = self._llm.templates.get(KB_QA)[DOC_SELECTION]
-                responses = list()
-                for doc in relevant_documents:
-                    utterances_ = utterances + [{
-                        SPEAKER: SYSTEM,
-                        TEXT: f"{template['prefix']}{BLOCK_SEP}{template['format'].format(doc)}"
-                    }]
-                    dialogue = self._prepare_dialogue_assistant_chat_llm(utterances_, KB_QA)
-                    responses.append(self.generate_llm(
-                        dialogue,
-                        task=KB_QA,
-                        custom_generate_params=custom_generate_params,
-                        approach=PLAIN_COMPLETION
-                    ))
-                return responses
-            else:
-                template = self._llm.templates.get(KB_QA)[RELEVANT_DOCS]
+            utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
+        # Gather templates
+        templates = self._llm.templates[KB_QA]
+        # User directive
+        if 'directive' in templates:
+            utterances.append({SPEAKER: USER, TEXT: templates['directive']})
+        # Examples (if any)
+        if examples is not None or 'examples' in templates:
+            examples = examples if examples is not None else templates['examples']
+            random.shuffle(examples)
+            for example in examples:
+                reference_documents_ = BLOCK_SEP.join(
+                    templates['doc'].format(i, doc)
+                    for i, doc in enumerate(example['input']['reference_documents'], start=1)
+                )
                 utterances.append({
-                    SPEAKER: SYSTEM,
-                    TEXT: f"{template['prefix']}{BLOCK_SEP}"
-                          f"{BLOCK_SEP.join(template['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1))}"
+                    SPEAKER: USER,
+                    TEXT: templates['input']['format'].format(example['input']['question'], reference_documents_)
                 })
-        #
+                utterances.append({SPEAKER: AI, TEXT: example['output']})
+        # Prompt
+        reference_documents = BLOCK_SEP.join(
+            templates['doc'].format(i, doc) for i, doc in enumerate(reference_documents, start=1)
+        )
+        utterances.append({SPEAKER: USER, TEXT: templates['input']['format'].format(question, reference_documents)})
+        # Convert list of utterances into dialogue string
         dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, KB_QA)
 
-        return self.generate_llm(
-                dialogue,
-                task=KB_QA,
-                custom_generate_params=custom_generate_params,
-                approach=PLAIN_COMPLETION
-            )
+        return self.generate_llm(dialogue, task=KB_QA, custom_generate_params=custom_generate_params)
