@@ -311,11 +311,13 @@ class AIAssistant(_Singleton):
             for example in examples:
                 utterances.append({
                     SPEAKER: USER,
-                    TEXT: templates['input']['format'].format(example['input']['question'], example['input']['document'])
+                    TEXT: templates['query_doc_pair']['format'].format(
+                        example['input']['question'], example['input']['document']
+                    )
                 })
                 utterances.append({SPEAKER: AI, TEXT: example['output']})
         # Prompt
-        utterances.append({SPEAKER: USER, TEXT: templates['input']['format'].format(question, document)})
+        utterances.append({SPEAKER: USER, TEXT: templates['query_doc_pair']['format'].format(question, document)})
         # Convert list of utterances into dialogue string
         dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, RELEVANT_DOCUMENT_SELECTION)
 
@@ -350,14 +352,14 @@ class AIAssistant(_Singleton):
                 )
                 utterances.append({
                     SPEAKER: USER,
-                    TEXT: templates['input']['format'].format(example['input']['question'], reference_documents_)
+                    TEXT: templates['question']['format'].format(example['input']['question'], reference_documents_)
                 })
                 utterances.append({SPEAKER: AI, TEXT: example['output']})
         # Prompt
         reference_documents = BLOCK_SEP.join(
             templates['doc']['format'].format(i, doc) for i, doc in enumerate(reference_documents, start=1)
         )
-        utterances.append({SPEAKER: USER, TEXT: templates['input']['format'].format(question, reference_documents)})
+        utterances.append({SPEAKER: USER, TEXT: templates['question']['format'].format(question, reference_documents)})
         # Convert list of utterances into dialogue string
         dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, KB_QA)
 
