@@ -509,7 +509,7 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         results: List[Dict] = []
         # Iterate over queries
         for query_id, query in zip(query_ids, queries):
-            scores = self._transformer_encoder.predict([[query, doc] for doc in docs]).squeeze()
+            scores = self._transformer_encoder.predict([[query, doc] for doc in docs], apply_softmax=True).squeeze()
             if len(scores.shape) > 1:  # TODO fixme
                 scores = scores[:, 1]
             ordering: np.ndarray = np.argsort(-scores, axis=-1)
@@ -531,7 +531,9 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         # Compute similarity between query-document pairs
         for query_id, query, ids, docs in zip(query_ids, queries, doc_ids, documents):
             # Compute new scores and new ranks
-            scores: np.ndarray = self._transformer_encoder.predict([[query, doc] for doc in docs]).squeeze()
+            scores: np.ndarray = self._transformer_encoder.predict(
+                [[query, doc] for doc in docs], apply_softmax=True
+            ).squeeze()
             if len(scores.shape) > 1:  # TODO fixme
                 scores = scores[:, 1]
             ordering: np.ndarray = np.argsort(-scores, axis=-1)
@@ -552,8 +554,10 @@ class CrossEncoderPTTransformer(_SemanticPTTransformer):
         # Docs
         docs = df[txt_col].values
         # Compute score
-        scores = self._transformer_encoder.predict(list([q, d] for q, d in zip(queries, docs))).squeeze()
+        scores = self._transformer_encoder.predict(
+            list([q, d] for q, d in zip(queries, docs)), apply_softmax=True
+        ).squeeze()
         if len(scores.shape) > 1:  # TODO fixme
-            scores = scores[:, 0]
+            scores = scores[:, 1]
 
         return scores
