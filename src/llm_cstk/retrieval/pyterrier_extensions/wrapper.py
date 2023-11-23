@@ -5,7 +5,6 @@ from functools import partial
 import pickle
 import bz2
 
-import torch
 from sentence_transformers import util
 
 import pandas as pd
@@ -166,7 +165,7 @@ class _SemanticPTTransformer(pt.Transformer):
         return scorer
 
 
-class BiEncoderPTTransformer(_SemanticPTTransformer):
+class BiEncoderPTTransformer(_SemanticPTTransformer):  # TODO add management of documents out of
     TRANSFORMER_TYPE = SentenceTransformer
     _ann_index_cache: Dict[str, ANNIndex] = dict()
     _pre_computed_embeddings_cache: Dict[str, EmbeddingsCache] = dict()

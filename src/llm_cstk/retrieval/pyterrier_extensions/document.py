@@ -66,10 +66,10 @@ class PTDocManager(_Singleton):
     def index_corpus(
             self,
             corpus: str,
-            transformers: Optional[List[Dict]] = None,
+            transformers: Optional[Dict[str, Dict]] = None,
             overwrite: bool = False,
     ):
-        transformers = transformers if transformers is not None else list()
+        transformers = transformers if transformers is not None else dict()
         # Main corpus directory
         corpus_dir_path: str = os.path.join(self.data_dir_path, corpus)
         if not os.path.exists(corpus_dir_path):
@@ -105,7 +105,7 @@ class PTDocManager(_Singleton):
             pt_indexer: pt.Indexer = pt.DFIndexer(index_dir_path)
             pt_indexer.index(data_df[TEXT], data_df.astype(str))
             # Semantic index
-            for transformer_configs in transformers:
+            for transformer_id, transformer_configs in transformers.items():
                 ann_index_path = None
                 if ANN_PARAM in transformer_configs:
                     ann_index_path = self.get_semantic_index_path(
@@ -123,7 +123,7 @@ class PTDocManager(_Singleton):
                 pre_computed_embeddings_path = self.get_embedding_cache_path(
                     self.data_dir_path,
                     corpus,
-                    transformer_configs[TRANSFORMER_PARAM],
+                    transformer_id,
                     transformer_configs.get(NORM_PARAM, True),
                     CHUNK_AFFIX in name
                 )
