@@ -23,6 +23,7 @@ class _SemanticPTTransformer(pt.Transformer):
     def __init__(
             self,
             transformer: str,
+            model_path: str,
             data_df_path: Optional[str] = None,
             metadata: bool = False,
             device: Optional[torch.device] = None,
@@ -30,6 +31,7 @@ class _SemanticPTTransformer(pt.Transformer):
             **semantic_model_kwargs
     ):
         self.transformer: str = transformer
+        self.model_path: str = model_path
         self.data_df_path: Optional[str] = data_df_path
         self.metadata: bool = metadata
         self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,7 +49,7 @@ class _SemanticPTTransformer(pt.Transformer):
     def _load_transformer_encoder(self) -> SentenceTransformer:
         if self.transformer not in self._transformer_encoder_cache:
             transformer_encoder = self.TRANSFORMER_TYPE(
-                self.transformer, device=self.device.type, **self.semantic_model_kwargs
+                self.model_path, device=self.device.type, **self.semantic_model_kwargs
             )
             self._transformer_encoder_cache[self.transformer] = transformer_encoder
 

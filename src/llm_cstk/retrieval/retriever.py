@@ -596,19 +596,19 @@ class DocRetriever(_Singleton):
     def index_corpus(
             self,
             corpus: str,
-            transformer: Optional[Dict[str, Dict]] = None,
+            transformer: Optional[Union[Dict, List[Dict]]] = None,
             overwrite: bool = False
     ):
         self._doc_manager.index_corpus(
             corpus,
-            transformers=transformer,
+            transformers=transformer if isinstance(transformer, list) or transformer is None else [transformer],
             overwrite=overwrite
         )
 
     def index_large_corpus(
             self,
             corpus: str,
-            transformer: Optional[Dict[str, Dict]] = None,
+            transformer: Optional[Union[str, List[str]]] = None,
             overwrite: bool = False
     ):
         raise NotImplementedError()
