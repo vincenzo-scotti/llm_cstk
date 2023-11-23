@@ -252,8 +252,36 @@ class AIAssistant(_Singleton):
 
         return self.generate_llm(dialogue, task=INFO_EXTRACTION, custom_generate_params=custom_generate_params)
 
-    def query_extraction(self, utterances: List[Dict[str, str]], custom_generate_params: Optional[Dict] = None):
-        ...  # TODO
+    def query_extraction(
+            self,
+            snippet: str,
+            examples: Optional[List[Dict[str, str]]] = None,
+            custom_generate_params: Optional[Dict] = None
+    ):
+        # Create utterances container
+        utterances = list()
+        # System instructions
+        instructions = self._llm.instructions.get(QUERY_EXTRACTION)
+        if instructions is not None:
+            utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
+        # Gather templates
+        templates = self._llm.templates[QUERY_EXTRACTION]
+        # User directive
+        if 'directive' in templates:
+            utterances.append({SPEAKER: USER, TEXT: templates['directive']})
+        # Examples (if any)
+        if examples is not None or 'examples' in templates:
+            examples = examples if examples is not None else templates['examples']
+            random.shuffle(examples)
+            for example in examples:
+                utterances.append({SPEAKER: USER, TEXT: templates['snippet']['format'].format(example['input'])})
+                utterances.append({SPEAKER: AI, TEXT: example['output']})
+        # Prompt
+        utterances.append({SPEAKER: USER, TEXT: templates['snippet']['format'].format(snippet)})
+        # Convert list of utterances into dialogue string
+        dialogue = self._prepare_dialogue_assistant_chat_llm(utterances, QUERY_EXTRACTION)
+
+        return self.generate_llm(dialogue, task=QUERY_EXTRACTION, custom_generate_params=custom_generate_params)
 
     def query_recognition(
             self,
