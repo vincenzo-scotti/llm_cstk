@@ -1,5 +1,10 @@
 # LLM CSTK
 
+> [!WARNING]  
+> This README.md file is currently outdated, we will update it as soon as possible.
+> In the meanwhile we suggest to refer to the source code to be sure that all functionalities work properly.
+> We are sorry for the inconvenience.
+
 An *LLM*-powered toolkit for *chatbot* and *search* services.
 
 This toolkit is thought to provide easy-to-deploy APIs integrating chatbot and (semantic) search services using LLM technologies.
