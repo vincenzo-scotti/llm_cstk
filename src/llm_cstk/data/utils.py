@@ -93,6 +93,7 @@ UNICODE_SWITCH_LIST: List[Tuple[str, str]] = [
 
 class _ChatData:
     DATA_SET_ID: Optional[str] = None
+    SPLITS: List[str] = [TRAIN, VALIDATION, TEST]
     CUSTOM_COLS: Optional[List[str]] = None
     # Joblib params
     JOBLIB_BACKEND: str = 'threading'
