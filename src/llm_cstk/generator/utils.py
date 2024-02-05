@@ -43,6 +43,8 @@ PLAIN_COMPLETION: str = 'plain_completion'
 CHAT_COMPLETION: str = 'chat_completion'
 
 # Templates
+DEFAULT: str = 'default'
+
 DIALOGUE: str = 'dialogue'
 CANDIDATES: str = 'candidates'
 RELEVANT_DOCS: str = 'docs'

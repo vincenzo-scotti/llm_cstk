@@ -19,9 +19,9 @@ class LLMAPI(_Singleton):
         super().__init__(*args, **kwargs)
         #
         self.url: str = url
-        self.generate_params: Dict[Task, Dict] = generate_params if generate_params is not None else dict()
-        self.instructions: Dict[Task, str] = instructions if instructions is not None else dict()
-        self.templates: Dict[Task, Dict] = templates if templates is not None else dict()
+        self.generate_params: Dict[str, Dict[Task, Dict]] = generate_params if generate_params is not None else dict()
+        self.instructions: Dict[Task, Dict[str, str]] = instructions if instructions is not None else dict()
+        self.templates: Dict[Task, Dict[str, Dict]] = templates if templates is not None else dict()
 
     def _prepare_completions_input(self, text: str, **generate_params):
         return {PROMPT: text, **generate_params}
