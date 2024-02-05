@@ -25,7 +25,7 @@ class AIAssistant(_Singleton):
         # LLM Chatbot
         self._llm: LLMAPI = LLMAPI.load(**self._submodules_params['llm'])
         self._custom_lm_factory: Optional[CustomLMFactory] = None
-        if 'custom_lm_factory' in self._submodules_params:
+        if self._submodules_params['custom_lm_factory']:
             self._custom_lm_factory = CustomLMFactory.load(**self._submodules_params['custom_lm_factory'])
 
     @classmethod
@@ -44,7 +44,7 @@ class AIAssistant(_Singleton):
         if task is None:
             return dict()
         else:
-            return self._llm.generate_params[corpus].get(task, dict())
+            return self._llm.generate_params.get(corpus, self._llm.generate_params[DEFAULT]).get(task, dict())
 
     def generate_llm(
             self,
@@ -113,7 +113,9 @@ class AIAssistant(_Singleton):
     ) -> str:
         utterances = copy.deepcopy(utterances)
         #
-        template = self._llm.templates[RESPONSE_SUGGESTION][corpus][UTTERANCES]
+        template = self._llm.templates[RESPONSE_SUGGESTION].get(
+            corpus, self._llm.templates[RESPONSE_SUGGESTION][DEFAULT]
+        )[UTTERANCES]
         dialogue: List[str] = list()
         dialogue.extend(
             template['format'].format(utterance[SPEAKER], utterance[TEXT]).strip()
@@ -126,21 +128,27 @@ class AIAssistant(_Singleton):
             dialogue.insert(0, info)
         #
         if candidates is not None and len(candidates) > 0:
-            template_ = self._llm.templates[RESPONSE_SUGGESTION][corpus][CANDIDATES]
+            template_ = self._llm.templates[RESPONSE_SUGGESTION].get(
+                corpus, self._llm.templates[RESPONSE_SUGGESTION][DEFAULT]
+            )[CANDIDATES]
             candidates = template_['prefix'] + BLOCK_SEP + BLOCK_SEP.join(
                 template_['format'].format(i, example[TEXT]) for i, example in enumerate(candidates, start=1)
             )
             dialogue.append(template['format'].format(SYSTEM, candidates))
         #
         if relevant_documents is not None and len(relevant_documents) > 0:
-            template_ = self._llm.templates[RESPONSE_SUGGESTION][corpus][RELEVANT_DOCS]
+            template_ = self._llm.templates[RESPONSE_SUGGESTION].get(
+                corpus, self._llm.templates[RESPONSE_SUGGESTION][DEFAULT]
+            )[RELEVANT_DOCS]
             relevant_documents = template_['prefix'] + BLOCK_SEP + BLOCK_SEP.join(
                 template_['format'].format(i, doc) for i, doc in enumerate(relevant_documents, start=1)
             )
             dialogue.append(template['format'].format(SYSTEM, relevant_documents))
         #
         if speaker is not None:
-            template_ = self._llm.templates[RESPONSE_SUGGESTION][corpus][PROMPT]
+            template_ = self._llm.templates[RESPONSE_SUGGESTION].get(
+                corpus, self._llm.templates[RESPONSE_SUGGESTION][DEFAULT]
+            )[PROMPT]
             dialogue.append(template_['format'].format(speaker))
 
         return template['sep'].join(dialogue)
@@ -160,9 +168,13 @@ class AIAssistant(_Singleton):
         # See https://openai.com/blog/gpt-4-api-general-availability in the "few-shot learning" example
 
         dialogue = list()
-        instructions = self._llm.instructions.get(RESPONSE_SUGGESTION, dict()).get(corpus)
+        instructions = self._llm.instructions.get(RESPONSE_SUGGESTION, dict()).get(
+            corpus, self._llm.instructions.get(RESPONSE_SUGGESTION, dict()).get(DEFAULT)
+        )
         if instructions is not None:
-            template = self._llm.templates.get(RESPONSE_SUGGESTION, dict()).get(corpus)[UTTERANCES]
+            template = self._llm.templates[RESPONSE_SUGGESTION].get(
+                corpus, self._llm.templates[RESPONSE_SUGGESTION][DEFAULT]
+            )[UTTERANCES]
             dialogue.append(template['format'].format(SYSTEM, instructions))  # [{SPEAKER: SYSTEM, TEXT: instructions}]
         if examples is not None:
             for example in examples:
@@ -178,7 +190,9 @@ class AIAssistant(_Singleton):
             candidates=candidates,
             relevant_documents=relevant_documents
         ))
-        template = self._llm.templates.get(RESPONSE_SUGGESTION, dict()).get(corpus)[DIALOGUE]
+        template = self._llm.templates[RESPONSE_SUGGESTION].get(
+            corpus, self._llm.templates[RESPONSE_SUGGESTION][DEFAULT]
+        )[DIALOGUE]
         dialogue = template['sep'].join(dialogue)
 
         return [
@@ -230,11 +244,11 @@ class AIAssistant(_Singleton):
     ) -> str:
         utterances = copy.deepcopy(utterances)
         #
-        template = self._llm.templates[task][corpus][UTTERANCES]
+        template = self._llm.templates[task].get(corpus, self._llm.templates[task][DEFAULT])[UTTERANCES]
         dialogue: List[str] = list()
         #
         if task in self._llm.instructions:
-            template_ = self._llm.templates[task][corpus][INSTRUCTIONS]
+            template_ = self._llm.templates[task].get(corpus, self._llm.templates[task][DEFAULT])[INSTRUCTIONS]
             dialogue.append(template_['format'].format(utterances.pop(0)[TEXT]))
         #
         for utterance in utterances:
@@ -252,13 +266,17 @@ class AIAssistant(_Singleton):
             custom_generate_params: Optional[Dict] = None
     ) -> Dict[str, str]:
         # Gather templates
-        templates = self._llm.templates[INFO_EXTRACTION][corpus]
+        templates = self._llm.templates[INFO_EXTRACTION].get(
+            corpus, self._llm.templates[INFO_EXTRACTION][DEFAULT]
+        )
         # User directive
         if 'directive' in templates:
             document = templates['doc']['format'].format(document)
             utterances.insert(0, {SPEAKER: USER, TEXT: f"{templates['directive']}{BLOCK_SEP}{document}"})
         # System instructions
-        instructions = self._llm.instructions.get(INFO_EXTRACTION, dict()).get(corpus)
+        instructions = self._llm.instructions.get(INFO_EXTRACTION, dict()).get(
+            corpus, self._llm.instructions.get(INFO_EXTRACTION, dict()).get(DEFAULT)
+        )
         if instructions is not None:
             utterances.insert(0, {SPEAKER: SYSTEM, TEXT: instructions})
         # Convert list of utterances into dialogue string
@@ -278,11 +296,15 @@ class AIAssistant(_Singleton):
         # Create utterances container
         utterances = list()
         # System instructions
-        instructions = self._llm.instructions.get(QUERY_EXTRACTION, dict()).get(corpus)
+        instructions = self._llm.instructions.get(QUERY_EXTRACTION, dict()).get(
+            corpus, self._llm.instructions.get(QUERY_EXTRACTION, dict()).get(DEFAULT)
+        )
         if instructions is not None:
             utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
         # Gather templates
-        templates = self._llm.templates[QUERY_EXTRACTION][corpus]
+        templates = self._llm.templates[QUERY_EXTRACTION].get(
+            corpus, self._llm.templates[QUERY_EXTRACTION][DEFAULT]
+        )
         # User directive
         if 'directive' in templates:
             utterances.append({SPEAKER: USER, TEXT: templates['directive']})
@@ -312,11 +334,15 @@ class AIAssistant(_Singleton):
         # Create utterances container
         utterances = list()
         # System instructions
-        instructions = self._llm.instructions.get(QUERY_RECOGNITION, dict()).get(corpus)
+        instructions = self._llm.instructions.get(QUERY_RECOGNITION, dict()).get(
+            corpus, self._llm.instructions.get(QUERY_RECOGNITION, dict()).get(DEFAULT)
+        )
         if instructions is not None:
             utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
         # Gather templates
-        templates = self._llm.templates[QUERY_RECOGNITION][corpus]
+        templates = self._llm.templates[QUERY_RECOGNITION].get(
+            corpus, self._llm.templates[QUERY_RECOGNITION][DEFAULT]
+        )
         # User directive
         if 'directive' in templates:
             utterances.append({SPEAKER: USER, TEXT: templates['directive']})
@@ -345,11 +371,15 @@ class AIAssistant(_Singleton):
         # Create utterances container
         utterances = list()
         # System instructions
-        instructions = self._llm.instructions.get(RELEVANT_DOCUMENT_SELECTION, dict()).get(corpus)
+        instructions = self._llm.instructions.get(RELEVANT_DOCUMENT_SELECTION, dict()).get(
+            corpus, self._llm.instructions.get(RELEVANT_DOCUMENT_SELECTION, dict()).get(DEFAULT)
+        )
         if instructions is not None:
             utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
         # Gather templates
-        templates = self._llm.templates[RELEVANT_DOCUMENT_SELECTION][corpus]
+        templates = self._llm.templates[RELEVANT_DOCUMENT_SELECTION].get(
+            corpus, self._llm.templates[RELEVANT_DOCUMENT_SELECTION][DEFAULT]
+        )
         # User directive
         if 'directive' in templates:
             utterances.append({SPEAKER: USER, TEXT: templates['directive']})
@@ -385,11 +415,13 @@ class AIAssistant(_Singleton):
         # Create utterances container
         utterances = list()
         # System instructions
-        instructions = self._llm.instructions.get(KB_QA, dict()).get(corpus)
+        instructions = self._llm.instructions.get(KB_QA, dict()).get(
+            corpus, self._llm.instructions.get(KB_QA, dict()).get(DEFAULT)
+        )
         if instructions is not None:
             utterances.append({SPEAKER: SYSTEM, TEXT: instructions})
         # Gather templates
-        templates = self._llm.templates[KB_QA][corpus]
+        templates = self._llm.templates[KB_QA].get(corpus, self._llm.templates[KB_QA][DEFAULT])
         # User directive
         if 'directive' in templates:
             utterances.append({SPEAKER: USER, TEXT: templates['directive']})
