@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
 LABEL description="Llama-CPP-Python server (docs: https://github.com/abetlen/llama-cpp-python)."
 # Install required tools
 RUN apt-get update && apt-get upgrade -y \

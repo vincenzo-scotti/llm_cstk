@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
 LABEL description="LM-based REST API for generator functionalities (docs: https://github.com/vincenzo-scotti/llm_cstk)."
 # Install required tools
 RUN apt-get update && apt-get upgrade -y \
